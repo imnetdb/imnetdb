@@ -3,7 +3,8 @@ from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
 from imnetdb.gdb import models
 
-from imnetdb.gdb.device_group import DeviceGroup
+from imnetdb.gdb.device_group import DeviceGroupNodes
+from imnetdb.gdb.device import DeviceNodes
 
 __all__ = ['GDBClient']
 
@@ -29,7 +30,8 @@ class GDBClient(object):
         _await_arange_server()
         self.ensure_database()
 
-        self.device_groups = DeviceGroup(gdb=self)
+        self.devices = DeviceNodes(gdb=self)
+        self.device_groups = DeviceGroupNodes(gdb=self)
 
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)

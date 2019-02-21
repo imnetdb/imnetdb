@@ -1,37 +1,26 @@
-from first import first
-from copy import deepcopy
+
+from imnetdb.gdb.node_utils import NamedCollection
 
 
-class DeviceGroup(object):
-
+class DeviceGroupNodes(NamedCollection):
     COLLECTION_NAME = 'DeviceGroup'
 
-    def __init__(self, gdb):
-        self.gdb = gdb
-        self.col = gdb.db.collection(self.COLLECTION_NAME)
-        self.exec = gdb.db.aql.execute
-
-    _aql_ensure_device_group = """
-    UPSERT {_key: @fields.name}
-    INSERT @fields
-    UPDATE @fields
-    IN @@col_name OPTIONS {keepNull: False}
-    RETURN {doc: NEW, old: OLD}
+    _query_ensure_device_in_group = """
+    UPSERT { _from: @rel._from, _to: @rel._to }
+    INSERT @rel
+    UPDATE @rel
+    IN @@edge_name
+    RETURN { doc: NEW, old: OLD }
     """
 
-    def ensure(self, name, **fields):
-        _fields = deepcopy(fields)
-        _fields['_key'] = name
-        _fields['name'] = name
-        result = first(self.exec(self._aql_ensure_device_group, bind_vars={
-            'fields': _fields,
-            '@col_name': self.COLLECTION_NAME
-        }))
+    def add_device(self, group_node, device_node):
+        self.exec(self._query_ensure_device_in_group, bind_vars={
+            'rel': dict(_from=device_node['_id'], _to=group_node['_id']),
+            '@edge_name': 'device_member'
+        })
 
-        return result['doc']
-
-    def __iter__(self):
-        return self.col.all()
-
-    def __getitem__(self, name):
-        return self.col.get(name)
+    def del_device(self, group_node, device_node):
+        self.gdb.db.collection('device_member').delete_match(filters={
+            '_from': device_node['_id'],
+            '_to': group_node['_id']
+        })
