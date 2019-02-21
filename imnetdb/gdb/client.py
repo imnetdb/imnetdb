@@ -3,6 +3,7 @@ from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
 from imnetdb.gdb import models
 
+from imnetdb.gdb.device_group import DeviceGroup
 
 __all__ = ['GDBClient']
 
@@ -14,7 +15,7 @@ class GDBClient(object):
         self._arango = ArangoClient(host=host, port=port)
         self._sysdb = self._arango.db('_system', username=user, password=password)
 
-        self._db = None
+        self.db = None
         self.db_name = db_name
         self.graph = None
         self._user = user
@@ -28,6 +29,8 @@ class GDBClient(object):
         _await_arange_server()
         self.ensure_database()
 
+        self.device_groups = DeviceGroup(gdb=self)
+
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
 
@@ -36,22 +39,22 @@ class GDBClient(object):
             self._sysdb.create_database(self.db_name, users=[
                 dict(username=self._user, password=self._password, active=True)])
 
-        self._db = self._arango.db(self.db_name, username=self._user, password=self._password)
+        self.db = self._arango.db(self.db_name, username=self._user, password=self._password)
 
         for node_type in models.nodes_types:
-            if not self._db.has_collection(node_type):
-                self._db.create_collection(node_type)
+            if not self.db.has_collection(node_type):
+                self.db.create_collection(node_type)
 
         for _from_node, edge_col, _to_node in models.rel_types:
-            if not self._db.has_collection(edge_col):
-                self._db.create_collection(edge_col, edge=True)
+            if not self.db.has_collection(edge_col):
+                self.db.create_collection(edge_col, edge=True)
 
-        if not self._db.has_graph('master'):
-            self._db.create_graph('master', edge_definitions=[
+        if not self.db.has_graph('master'):
+            self.db.create_graph('master', edge_definitions=[
                 dict(edge_collection=edge_col,
                      from_vertex_collections=[_from_node],
                      to_vertex_collections=[_to_node])
                 for _from_node, edge_col, _to_node in models.rel_types
             ])
 
-        self.graph = self._db.graph('master')
+        self.graph = self.db.graph('master')
