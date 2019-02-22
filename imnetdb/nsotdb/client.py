@@ -1,12 +1,12 @@
 import retrying
 from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
-from imnetdb.gdb import models
+from imnetdb.nsotdb import models
 
-from imnetdb.gdb.device_group import DeviceGroupNodes
-from imnetdb.gdb.device import DeviceNodes
-from imnetdb.gdb.interface import InterfaceNodes
-from imnetdb.gdb.cabling import CableNodes
+from imnetdb.nsotdb.device_group import DeviceGroupNodes
+from imnetdb.nsotdb.device import DeviceNodes
+from imnetdb.nsotdb.interface import InterfaceNodes
+from imnetdb.nsotdb.cabling import CableNodes
 
 __all__ = ['IMNetDB']
 

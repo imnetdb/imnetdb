@@ -1,4 +1,4 @@
-from imnetdb.gdb.node_utils import DictKeyCollection
+from imnetdb.nsotdb.node_utils import DictKeyCollection
 
 
 class InterfaceNodes(DictKeyCollection):

@@ -1,4 +1,4 @@
-from imnetdb.gdb import node_utils
+from imnetdb.nsotdb import node_utils
 
 
 class DeviceNodes(node_utils.NameKeyCollection):
