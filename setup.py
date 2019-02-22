@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 package_version = '0.0.1'
-package_name = 'imnetdb-client'
+package_name = 'imnetdb-nsotdb'
 
 
 def requirements(filename='requirements.txt'):
@@ -15,7 +15,7 @@ with open("README.md", "r") as fh:
 setup(
     name=package_name,
     version=package_version,
-    description='imnetdb graph database library',
+    description='IMNetDB network source of truth graph database library',
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='Jeremy Schulman',

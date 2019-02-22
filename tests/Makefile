@@ -1,8 +1,12 @@
 all:
-	pytest -v --ignore=test_clean.py \
+	@ echo "unit testing code"
+	@ pytest -v \
+		--ignore=test_clean.py \
 		--cov ../imnetdb \
-		--cov-report html:htmlcov --cov-report term
+		--cov-report html:htmlcov \
+		--cov-report term
 
 clean:
-	pytest -v test_clean.py
+	@ echo "cleaning up test environment"
+	@ pytest -v test_clean.py
 
