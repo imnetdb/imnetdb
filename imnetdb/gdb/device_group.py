@@ -2,7 +2,7 @@
 from imnetdb.gdb import node_utils
 
 
-class DeviceGroupNodes(node_utils.NamedCollection):
+class DeviceGroupNodes(node_utils.NameKeyCollection):
 
     COLLECTION_NAME = 'DeviceGroup'
 
@@ -19,7 +19,7 @@ class DeviceGroupNodes(node_utils.NamedCollection):
             The Device node dict
 
         """
-        self.gdb.ensure_edge((device_node, 'device_member', group_node))
+        self.client.ensure_edge((device_node, 'device_member', group_node))
 
     def del_device(self, group_node, device_node):
         """
@@ -33,4 +33,4 @@ class DeviceGroupNodes(node_utils.NamedCollection):
         device_node : dict
             The Device node dict
         """
-        self.gdb.ensure_edge((device_node, 'device_member', group_node), present=False)
+        self.client.ensure_edge((device_node, 'device_member', group_node), present=False)

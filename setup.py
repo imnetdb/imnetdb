@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 package_version = '0.0.1'
-package_name = 'imnetdb-gdb'
+package_name = 'imnetdb-client'
 
 
 def requirements(filename='requirements.txt'):

@@ -77,7 +77,8 @@ class GDBClient(object):
 
     def ensure_edge(self, edge, present=True):
         """
-        Ensure that an edge relationship either exists (preset=True) or does not.
+        Ensure that an edge relationship either exists (present=True) or does not
+        (present=False).
 
         Parameters
         ----------

@@ -6,7 +6,7 @@ class CommonCollection(object):
     COLLECTION_NAME = None
 
     def __init__(self, client):
-        self.gdb = client
+        self.client = client
         self.col = client.db.collection(self.COLLECTION_NAME)
         self.exec = client.db.aql.execute
 

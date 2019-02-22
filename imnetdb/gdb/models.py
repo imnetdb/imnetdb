@@ -8,10 +8,10 @@ nodes_types = [
 ]
 
 rel_types = [
-    ('Device', 'device_member', 'DeviceGroup'),
-    ('Device', 'equip_iface', 'Interface'),
-    ('Interface', 'lag_member', "LAG"),
-    ('Interface', 'connected', 'Cable'),
-    ('VLAN', "vlan_member", 'VLANGroup')
+    ('Device',      'device_member',        'DeviceGroup'),
+    ('Device',      'equip_interface',      'Interface'),
+    ('Interface',   'lag_member',           'LAG'),
+    ('Interface',   'cabled',               'Cable'),
+    ('VLAN',        "vlan_member",          'VLANGroup')
 ]
 

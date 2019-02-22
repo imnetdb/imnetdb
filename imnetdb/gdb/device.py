@@ -1,5 +1,5 @@
-from imnetdb.gdb.node_utils import NamedCollection
+from imnetdb.gdb import node_utils
 
 
-class DeviceNodes(NamedCollection):
+class DeviceNodes(node_utils.NameKeyCollection):
     COLLECTION_NAME = 'Device'
