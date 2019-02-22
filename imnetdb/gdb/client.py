@@ -5,6 +5,7 @@ from imnetdb.gdb import models
 
 from imnetdb.gdb.device_group import DeviceGroupNodes
 from imnetdb.gdb.device import DeviceNodes
+from imnetdb.gdb.interface import InterfaceNodes
 
 __all__ = ['GDBClient']
 
@@ -33,8 +34,9 @@ class GDBClient(object):
         _await_arange_server()
         self.ensure_database()
 
-        self.devices = DeviceNodes(client=self)
         self.device_groups = DeviceGroupNodes(client=self)
+        self.devices = DeviceNodes(client=self)
+        self.interfaces = InterfaceNodes(client=self)
 
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
