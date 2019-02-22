@@ -10,3 +10,4 @@ class InterfaceNodes(DictKeyCollection):
 
         dev_node = self.client.devices[key['device']]
         self.client.ensure_edge((dev_node, 'equip_interface', if_node))
+        return if_node

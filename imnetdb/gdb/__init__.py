@@ -1,1 +1,1 @@
-from imnetdb.gdb.client import GDBClient
+from imnetdb.gdb.client import IMNetDB

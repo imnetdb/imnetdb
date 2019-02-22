@@ -1,7 +1,7 @@
 import pytest
-from imnetdb.gdb import GDBClient
+from imnetdb.gdb import IMNetDB
 
 
 @pytest.fixture(scope='session')
-def gdb_client():
-    return GDBClient('admin123')
+def imnetdb():
+    return IMNetDB('admin123')

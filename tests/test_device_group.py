@@ -1,4 +1,4 @@
-def test_device_group(gdb_client):
+def test_device_group(imnetdb):
 
     group_dataset = {
         'leafgroup-01': dict(role='leaf'),
@@ -9,7 +9,7 @@ def test_device_group(gdb_client):
     }
 
     for group_name, fields in group_dataset.items():
-        group_dataset[group_name]['node'] = gdb_client.device_groups.ensure(group_name, **fields)
+        group_dataset[group_name]['node'] = imnetdb.device_groups.ensure(group_name, **fields)
 
     devices = {
         'leaf01-1': dict(role='leaf', group='leafgroup-01'),
@@ -31,6 +31,6 @@ def test_device_group(gdb_client):
     for device_name, device_info in devices.items():
         group_name = device_info.pop('group')
         group_node = group_dataset[group_name]['node']
-        device_node = gdb_client.devices.ensure(device_name, **device_info)
+        device_node = imnetdb.devices.ensure(device_name, **device_info)
         devices[device_name]['node'] = device_node
-        gdb_client.device_groups.add_device(group_node, device_node)
+        imnetdb.device_groups.add_device(group_node, device_node)

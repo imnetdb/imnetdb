@@ -6,11 +6,12 @@ from imnetdb.gdb import models
 from imnetdb.gdb.device_group import DeviceGroupNodes
 from imnetdb.gdb.device import DeviceNodes
 from imnetdb.gdb.interface import InterfaceNodes
+from imnetdb.gdb.cabling import CableNodes
 
-__all__ = ['GDBClient']
+__all__ = ['IMNetDB']
 
 
-class GDBClient(object):
+class IMNetDB(object):
 
     def __init__(self, password, user='root', db_name='imnetdb', host='0.0.0.0', port=8529, timeout=10):
 
@@ -37,6 +38,7 @@ class GDBClient(object):
         self.device_groups = DeviceGroupNodes(client=self)
         self.devices = DeviceNodes(client=self)
         self.interfaces = InterfaceNodes(client=self)
+        self.cabling = CableNodes(client=self)
 
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
