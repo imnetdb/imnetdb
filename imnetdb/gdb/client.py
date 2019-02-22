@@ -19,8 +19,11 @@ class GDBClient(object):
         self.db = None
         self.db_name = db_name
         self.graph = None
+        self.query = None
+
         self._user = user
         self._password = password
+
 
         @retrying.retry(retry_on_exception=lambda e:  isinstance(e, ServerConnectionError),
                         stop_max_delay=timeout * 1000)
@@ -30,8 +33,8 @@ class GDBClient(object):
         _await_arange_server()
         self.ensure_database()
 
-        self.devices = DeviceNodes(gdb=self)
-        self.device_groups = DeviceGroupNodes(gdb=self)
+        self.devices = DeviceNodes(client=self)
+        self.device_groups = DeviceGroupNodes(client=self)
 
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
@@ -42,6 +45,7 @@ class GDBClient(object):
                 dict(username=self._user, password=self._password, active=True)])
 
         self.db = self._arango.db(self.db_name, username=self._user, password=self._password)
+        self.query = self.db.aql.execute
 
         for node_type in models.nodes_types:
             if not self.db.has_collection(node_type):
@@ -60,3 +64,37 @@ class GDBClient(object):
             ])
 
         self.graph = self.db.graph('master')
+
+    _query_ensure_edge = """
+    UPSERT { _from: @rel._from, _to: @rel._to }
+    INSERT @rel
+    UPDATE @rel
+    IN @@edge_name
+    RETURN { doc: NEW, old: OLD }
+    """
+
+    def ensure_edge(self, edge, present=True):
+        """
+        Ensure that an edge relationship either exists (preset=True) or does not.
+
+        Parameters
+        ----------
+        edge : tuple
+            (from_node_dict, edge_col_name, to_node_dict)
+
+        present : bool
+            If True ensure the edge exists.
+            If False ensure the edge does not exist.
+        """
+        from_node, edge_col, to_node = edge
+
+        if present is True:
+            self.query(self._query_ensure_edge, bind_vars={
+                'rel': dict(_from=from_node['_id'], _to=to_node['_id']),
+                '@edge_name': edge_col
+            })
+        else:
+            self.db.collection(edge_col).delete_match(filters={
+                '_from': from_node['_id'],
+                '_to': to_node['_id']
+            })

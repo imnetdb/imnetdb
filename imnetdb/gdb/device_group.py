@@ -1,26 +1,36 @@
 
-from imnetdb.gdb.node_utils import NamedCollection
+from imnetdb.gdb import node_utils
 
 
-class DeviceGroupNodes(NamedCollection):
+class DeviceGroupNodes(node_utils.NamedCollection):
+
     COLLECTION_NAME = 'DeviceGroup'
 
-    _query_ensure_device_in_group = """
-    UPSERT { _from: @rel._from, _to: @rel._to }
-    INSERT @rel
-    UPDATE @rel
-    IN @@edge_name
-    RETURN { doc: NEW, old: OLD }
-    """
-
     def add_device(self, group_node, device_node):
-        self.exec(self._query_ensure_device_in_group, bind_vars={
-            'rel': dict(_from=device_node['_id'], _to=group_node['_id']),
-            '@edge_name': 'device_member'
-        })
+        """
+        Add a Device to a DeviceGroup
+
+        Parameters
+        ----------
+        group_node : dict
+            The DeviceGroup node dict
+
+        device_node : dict
+            The Device node dict
+
+        """
+        self.gdb.ensure_edge((device_node, 'device_member', group_node))
 
     def del_device(self, group_node, device_node):
-        self.gdb.db.collection('device_member').delete_match(filters={
-            '_from': device_node['_id'],
-            '_to': group_node['_id']
-        })
+        """
+        Remove a Device from a DeviceGroup
+
+        Parameters
+        ----------
+        group_node : dict
+            The DeviceGroup node dict
+
+        device_node : dict
+            The Device node dict
+        """
+        self.gdb.ensure_edge((device_node, 'device_member', group_node), present=False)

@@ -6,10 +6,10 @@ class NamedCollection(object):
 
     COLLECTION_NAME = None
 
-    def __init__(self, gdb):
-        self.gdb = gdb
-        self.col = gdb.db.collection(self.COLLECTION_NAME)
-        self.exec = gdb.db.aql.execute
+    def __init__(self, client):
+        self.gdb = client
+        self.col = client.db.collection(self.COLLECTION_NAME)
+        self.exec = client.db.aql.execute
 
     __aql_ensure_node = """
     UPSERT {_key: @fields.name}
@@ -34,4 +34,20 @@ class NamedCollection(object):
         return self.col.all()
 
     def __getitem__(self, name):
+        """
+        Return a document node dict that has a key value of `name`.
+
+        Parameters
+        ----------
+        name : str,int
+            The unique key value for the node
+
+        Returns
+        -------
+        dict
+            The document node dict
+
+        None
+            If there is not document by the given key `name`.
+        """
         return self.col.get(name)
