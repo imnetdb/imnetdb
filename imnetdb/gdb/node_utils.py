@@ -14,6 +14,10 @@ class CommonCollection(object):
     def __iter__(self):
         return self.col.all()
 
+    def remove(self, node):
+        vert_col = self.client.graph.vertex_collection(self.COLLECTION_NAME)
+        vert_col.delete(node)
+
 
 class DictKeyCollection(CommonCollection):
 

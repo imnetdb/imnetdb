@@ -35,3 +35,13 @@ def test_cabling_one_side(imnetdb):
 
     assert found_0 == found_1
 
+
+def test_cabling_remove(imnetdb):
+    if_0 = imnetdb.interfaces[dict(device='spine1', name='eth0')]
+
+    found_0 = imnetdb.cabling.find(interface_nodes=[if_0])
+    cable_node = found_0['cable_node']
+    imnetdb.cabling.remove(cable_node)
+
+    found_1 = imnetdb.cabling.find(interface_nodes=[if_0])
+    assert found_1 is None
