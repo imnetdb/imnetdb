@@ -1,7 +1,24 @@
+"""
+Copyright 2019 Jeremy Schulman, nwkautomaniac@gmail.com
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 from arango.exceptions import AQLQueryExecuteError
 from imnetdb.nsotdb.node_utils import DictKeyCollection
 from first import first
 from string import Template
+
 
 class InterfaceNodes(DictKeyCollection):
 
@@ -41,24 +58,6 @@ class InterfaceNodes(DictKeyCollection):
             used=used, **fields)
         self.client.ensure_edge((dev_node, 'equip_interface', if_node))
         return if_node
-
-    # _query_allocate_interface = """
-    # LET update_fields = MERGE(
-    #     {used: true},
-    #     @update_fields
-    # )
-    #
-    # LET if_node_list = (
-    #     FOR interface in Interface
-    #         FILTER interface.device == @device_name and interface.used == false
-    #         LIMIT @count
-    #         UPDATE interface WITH update_fields IN Interface
-    #         OPTIONS { keepNull: false }
-    #         return NEW
-    # )
-    #
-    # RETURN LENGTH(if_node_list) == @count ? if_node_list : FAIL("Count not allocated")
-    # """
 
     _query_allocate_interface_fields = """
     LET update_fields = MERGE(
