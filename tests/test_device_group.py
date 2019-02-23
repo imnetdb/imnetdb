@@ -33,4 +33,4 @@ def test_device_group(imnetdb):
         group_node = group_dataset[group_name]['node']
         device_node = imnetdb.devices.ensure(device_name, **device_info)
         devices[device_name]['node'] = device_node
-        imnetdb.device_groups.add_device(group_node, device_node)
+        imnetdb.device_groups.add_member(group_node, device_node)

@@ -15,10 +15,10 @@
 from imnetdb.nsotdb.node_utils import NameKeyCollection, NamedKeyNodeGroup
 
 
-class DeviceNodes(NameKeyCollection):
-    COLLECTION_NAME = 'Device'
+class VlanNodes(NameKeyCollection):
+    COLLECTION_NAME = 'VLAN'
 
 
-class DeviceGroupNodes(NamedKeyNodeGroup):
-    EDGE_NAME = 'device_member'
-    COLLECTION_NAME = 'DeviceGroup'
+class VlanGroupNodes(NamedKeyNodeGroup):
+    COLLECTION_NAME = 'VLANGroup'
+    EDGE_NAME = 'vlan_member'

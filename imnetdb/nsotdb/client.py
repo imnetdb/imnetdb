@@ -17,11 +17,11 @@ from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
 from imnetdb.nsotdb import models
 
-from imnetdb.nsotdb.device_group import DeviceGroupNodes
-from imnetdb.nsotdb.device import DeviceNodes
+from imnetdb.nsotdb.device import DeviceNodes, DeviceGroupNodes
 from imnetdb.nsotdb.interface import InterfaceNodes
 from imnetdb.nsotdb.cabling import CableNodes
 from imnetdb.nsotdb.lag import LAGNodes
+from imnetdb.nsotdb.vlan import VlanNodes, VlanGroupNodes
 
 __all__ = ['IMNetDB']
 
@@ -55,6 +55,8 @@ class IMNetDB(object):
         self.interfaces = InterfaceNodes(client=self)
         self.cabling = CableNodes(client=self)
         self.lags = LAGNodes(client=self)
+        self.vlans = VlanNodes(client=self)
+        self.vlan_groups = VlanGroupNodes(client=self)
 
     def reset_database(self):
         self.wipe_database()

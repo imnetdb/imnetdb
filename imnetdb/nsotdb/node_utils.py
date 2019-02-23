@@ -17,6 +17,7 @@ from copy import deepcopy
 
 
 class CommonCollection(object):
+
     COLLECTION_NAME = None
 
     def __init__(self, client):
@@ -114,3 +115,63 @@ class NameKeyCollection(CommonCollection):
             If there is not document by the given key `name`.
         """
         return self.col.get(name)
+
+
+class NamedKeyNodeGroup(NameKeyCollection):
+    EDGE_NAME = None
+
+    def add_member(self, group_node, member_node):
+        """
+        Ensure the edge relationship from member_node to group_node exists.
+
+        Parameters
+        ----------
+        group_node : dict
+            The group node dict
+
+        member_node : dict
+            The member node dict
+        """
+        self.client.ensure_edge((member_node, self.EDGE_NAME, group_node))
+
+    def del_member(self, group_node, member_node):
+        """
+        Ensure the edge relationship from member_node to group_node does not exists.
+
+        Parameters
+        ----------
+        group_node : dict
+            The group node dict
+
+        member_node : dict
+            The member node dict
+        """
+        self.client.ensure_edge((member_node, self.EDGE_NAME, group_node), present=False)
+
+    _query_all_members = """
+    RETURN MERGE(
+        FOR member IN INBOUND DOCUMENT(@group_col, @group_name) @@edge_name
+            RETURN {[member.name]: member}
+    )        
+    """
+
+    def get_members(self, group_node):
+        """
+        Return a dictionary of the existing members that belong to the group.
+
+        Parameters
+        ----------
+        group_node : dict
+            The group node dict.  This must contain a 'name' field.
+
+        Returns
+        -------
+        dict
+            key: name of member
+            value: member node dict
+        """
+        return first(self.query(self._query_all_members, bind_vars={
+            'group_col': self.COLLECTION_NAME,
+            'group_name': group_node['name'],
+            '@edge_name': self.EDGE_NAME
+        }))
