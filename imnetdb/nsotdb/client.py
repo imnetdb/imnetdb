@@ -40,6 +40,10 @@ class IMNetDB(object):
         self.interfaces = InterfaceNodes(client=self)
         self.cabling = CableNodes(client=self)
 
+    def reset_database(self):
+        self.wipe_database()
+        self.ensure_database()
+
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
 
