@@ -21,13 +21,15 @@ from imnetdb.nsotdb.device_group import DeviceGroupNodes
 from imnetdb.nsotdb.device import DeviceNodes
 from imnetdb.nsotdb.interface import InterfaceNodes
 from imnetdb.nsotdb.cabling import CableNodes
+from imnetdb.nsotdb.lag import LAGNodes
 
 __all__ = ['IMNetDB']
 
 
 class IMNetDB(object):
 
-    def __init__(self, password, user='root', db_name='imnetdb', host='0.0.0.0', port=8529, timeout=10):
+    def __init__(self, password, user='root', db_name='imnetdb',
+                 host='0.0.0.0', port=8529, timeout=10):
 
         self._arango = ArangoClient(host=host, port=port)
         self._sysdb = self._arango.db('_system', username=user, password=password)
@@ -39,7 +41,6 @@ class IMNetDB(object):
 
         self._user = user
         self._password = password
-
 
         @retrying.retry(retry_on_exception=lambda e:  isinstance(e, ServerConnectionError),
                         stop_max_delay=timeout * 1000)
@@ -53,6 +54,7 @@ class IMNetDB(object):
         self.devices = DeviceNodes(client=self)
         self.interfaces = InterfaceNodes(client=self)
         self.cabling = CableNodes(client=self)
+        self.lags = LAGNodes(client=self)
 
     def reset_database(self):
         self.wipe_database()
