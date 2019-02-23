@@ -9,7 +9,7 @@ class CommonCollection(object):
         self.client = client
         self.db = client.db
         self.col = client.db.collection(self.COLLECTION_NAME)
-        self.exec = client.db.aql.execute
+        self.query = client.db.aql.execute
 
     def __iter__(self):
         return self.col.all()
@@ -33,7 +33,7 @@ class DictKeyCollection(CommonCollection):
         _fields = deepcopy(fields)
         _fields.update(key)
 
-        result = first(self.exec(self.__aql_ensure_node, bind_vars={
+        result = first(self.query(self.__aql_ensure_node, bind_vars={
             'key': key,
             'fields': _fields,
             '@col_name': self.COLLECTION_NAME
@@ -75,7 +75,7 @@ class NameKeyCollection(CommonCollection):
         _fields = deepcopy(fields)
         _fields['_key'] = name
         _fields['name'] = name
-        result = first(self.exec(self.__aql_ensure_node, bind_vars={
+        result = first(self.query(self.__aql_ensure_node, bind_vars={
             'fields': _fields,
             '@col_name': self.COLLECTION_NAME
         }))
