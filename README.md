@@ -8,12 +8,19 @@ databases.
 While every application will ultimately be different, there are a common set of networking constructs to get started 
 with.  These include the following:
 
+*Basic Device*
    * **Device** - represents a single managed device
    * **DeviceGroup** - represents a group of devices
    * **Interface** - represents a device interface
    * **Cable** - represents the connection between two device interfaces
+
+*Virtual Networking*   
    * **VLAN** - represents a VLAN
    * **VLANGroup** - represents a group of VLANs
+   
+*IP management*
+
+   * **RoutingTable** - represents a routing-table
    * **IPAddress** - represents an IPv4 or IPv6 address
    * **IPNetwork** - represents an IPv4 or IPv6 network address
    * **IPInterface** - represents an IPv4 or IPv6 interface address
