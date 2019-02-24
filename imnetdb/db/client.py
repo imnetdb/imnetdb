@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 import retrying
+
 from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
 from imnetdb.db import models
@@ -22,6 +24,10 @@ from imnetdb.db.interface import InterfaceNodes
 from imnetdb.db.cabling import CableNodes
 from imnetdb.db.lag import LAGNodes
 from imnetdb.db.vlan import VlanNodes, VlanGroupNodes
+from imnetdb.db.ipaddrs import (
+    RoutingTableNodes,
+    IPAddressNodes, IPInterfaceNodes, IPNetworkNodes
+)
 
 __all__ = ['IMNetDB']
 
@@ -57,6 +63,10 @@ class IMNetDB(object):
         self.lags = LAGNodes(client=self)
         self.vlans = VlanNodes(client=self)
         self.vlan_groups = VlanGroupNodes(client=self)
+        self.routing_tables = RoutingTableNodes(client=self)
+        self.ip_host_addrs = IPAddressNodes(client=self)
+        self.ip_net_addrs = IPNetworkNodes(client=self)
+        self.ip_if_addrs = IPInterfaceNodes(client=self)
 
     def reset_database(self):
         self.wipe_database()
@@ -64,6 +74,24 @@ class IMNetDB(object):
 
     def wipe_database(self):
         self._sysdb.delete_database(self.db_name, ignore_missing=True)
+
+    def ensure_master_graph(self, graph_name='master'):
+
+        if not self.db.has_graph(graph_name):
+            build = defaultdict(lambda : dict(from_vertex_collections=set(), to_vertex_collections=set()))
+
+            for from_vc, edge_name, to_vc in models.edge_defs:
+                build[edge_name]['from_vertex_collections'].add(from_vc)
+                build[edge_name]['to_vertex_collections'].add(to_vc)
+
+            edge_definitions = [dict(edge_collection=edge_name,
+                                     from_vertex_collections=list(vc['from_vertex_collections']),
+                                     to_vertex_collections=list(vc['to_vertex_collections']))
+                                for edge_name, vc in build.items()]
+
+            self.db.create_graph(graph_name, edge_definitions=edge_definitions)
+
+        self.graph = self.db.graph(graph_name)
 
     def ensure_database(self):
         if not self._sysdb.has_database(self.db_name):
@@ -81,15 +109,7 @@ class IMNetDB(object):
             if not self.db.has_collection(edge_col):
                 self.db.create_collection(edge_col, edge=True)
 
-        if not self.db.has_graph('master'):
-            self.db.create_graph('master', edge_definitions=[
-                dict(edge_collection=edge_col,
-                     from_vertex_collections=[_from_node],
-                     to_vertex_collections=[_to_node])
-                for _from_node, edge_col, _to_node in models.edge_defs
-            ])
-
-        self.graph = self.db.graph('master')
+        self.ensure_master_graph()
 
     _query_ensure_edge = """
     UPSERT { _from: @rel._from, _to: @rel._to }

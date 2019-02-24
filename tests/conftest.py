@@ -2,6 +2,9 @@ import pytest
 from imnetdb.db import IMNetDB
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def imnetdb():
-    return IMNetDB('admin123')
+    client = IMNetDB('admin123')
+    client.reset_database()
+    return client
+

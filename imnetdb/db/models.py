@@ -18,14 +18,18 @@ nodes_types = [
     'Interface',
     'IPAddress', 'IPNetwork', 'IPInterface',
     'LAG',
+    'RoutingTable',
     'VLAN', 'VLANGroup'
 ]
 
 edge_defs = [
-    ('Device',      'device_member',        'DeviceGroup'),
-    ('Device',      'equip_interface',      'Interface'),
-    ('Interface',   'lag_member',           'LAG'),
-    ('Interface',   'cabled',               'Cable'),
-    ('VLAN',        "vlan_member",          'VLANGroup')
+    ('Device',          'device_member',        'DeviceGroup'),
+    ('Device',          'equip_interface',      'Interface'),
+    ('Interface',       'lag_member',           'LAG'),
+    ('Interface',       'cabled',               'Cable'),
+    ('VLAN',            "vlan_member",          'VLANGroup'),
+    ('IPAddress',       'ip_member',            'RoutingTable'),
+    ('IPInterface',     'ip_member',            'RoutingTable'),
+    ('IPNetwork',       'ip_member',            'RoutingTable')
 ]
 
