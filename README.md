@@ -12,8 +12,8 @@ with.  These include the following:
    * **DeviceGroup** - represents a group of devices
    * **Interface** - represents a device interface
    * **Cable** - represents the connection between two device interfaces
-   * **Vlan** - represents a VLAN
-   * **VlanGroup** - represents a group of VLANs
+   * **VLAN** - represents a VLAN
+   * **VLANGroup** - represents a group of VLANs
    * **IPAddress** - represents an IPv4 or IPv6 address
    * **IPNetwork** - represents an IPv4 or IPv6 network address
    * **IPInterface** - represents an IPv4 or IPv6 interface address
