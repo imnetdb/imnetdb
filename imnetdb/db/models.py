@@ -12,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imnetdb.nsotdb.node_utils import NameKeyCollection, NamedKeyNodeGroup
+nodes_types = [
+    'Cable',
+    'Device', 'DeviceGroup',
+    'Interface',
+    'IPAddress', 'IPNetwork', 'IPInterface',
+    'LAG',
+    'VLAN', 'VLANGroup'
+]
 
+edge_defs = [
+    ('Device',      'device_member',        'DeviceGroup'),
+    ('Device',      'equip_interface',      'Interface'),
+    ('Interface',   'lag_member',           'LAG'),
+    ('Interface',   'cabled',               'Cable'),
+    ('VLAN',        "vlan_member",          'VLANGroup')
+]
 
-class DeviceNodes(NameKeyCollection):
-    COLLECTION_NAME = 'Device'
-
-
-class DeviceGroupNodes(NamedKeyNodeGroup):
-    EDGE_NAME = 'device_member'
-    COLLECTION_NAME = 'DeviceGroup'

@@ -5,16 +5,16 @@ def create_device(imnetdb, device_name, if_name_expr):
     dev_node = imnetdb.devices.ensure(device_name)
 
     if_nodes = [
-        imnetdb.interfaces.ensure(dict(device_node=dev_node, name=if_name), speed=10)
+        imnetdb.interfaces.ensure((dev_node, if_name), speed=10)
         for if_name in bracket_expansion(if_name_expr)
     ]
 
-    lag_node = imnetdb.lags.ensure(dict(device=dev_node['name'], name='ae0'))
+    lag_node = imnetdb.lags.ensure((dev_node, 'ae0'))
 
     for if_node in if_nodes[0:2]:
         imnetdb.lags.add_interface(lag_node, if_node)
 
-    lag_node = imnetdb.lags.ensure(dict(device=dev_node['name'], name='ae1'))
+    lag_node = imnetdb.lags.ensure((dev_node, 'ae1'))
 
     for if_node in if_nodes[2:4]:
         imnetdb.lags.add_interface(lag_node, if_node)

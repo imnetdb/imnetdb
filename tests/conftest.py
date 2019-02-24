@@ -1,5 +1,5 @@
 import pytest
-from imnetdb.nsotdb import IMNetDB
+from imnetdb.db import IMNetDB
 
 
 @pytest.fixture(scope='session')

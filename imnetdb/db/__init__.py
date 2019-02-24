@@ -12,13 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imnetdb.nsotdb.node_utils import NameKeyCollection, NamedKeyNodeGroup
-
-
-class VlanNodes(NameKeyCollection):
-    COLLECTION_NAME = 'VLAN'
-
-
-class VlanGroupNodes(NamedKeyNodeGroup):
-    COLLECTION_NAME = 'VLANGroup'
-    EDGE_NAME = 'vlan_member'
+from imnetdb.db.client import IMNetDB

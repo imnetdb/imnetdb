@@ -15,13 +15,13 @@
 import retrying
 from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
-from imnetdb.nsotdb import models
+from imnetdb.db import models
 
-from imnetdb.nsotdb.device import DeviceNodes, DeviceGroupNodes
-from imnetdb.nsotdb.interface import InterfaceNodes
-from imnetdb.nsotdb.cabling import CableNodes
-from imnetdb.nsotdb.lag import LAGNodes
-from imnetdb.nsotdb.vlan import VlanNodes, VlanGroupNodes
+from imnetdb.db.device import DeviceNodes, DeviceGroupNodes
+from imnetdb.db.interface import InterfaceNodes
+from imnetdb.db.cabling import CableNodes
+from imnetdb.db.lag import LAGNodes
+from imnetdb.db.vlan import VlanNodes, VlanGroupNodes
 
 __all__ = ['IMNetDB']
 
@@ -77,7 +77,7 @@ class IMNetDB(object):
             if not self.db.has_collection(node_type):
                 self.db.create_collection(node_type)
 
-        for _from_node, edge_col, _to_node in models.rel_types:
+        for _from_node, edge_col, _to_node in models.edge_defs:
             if not self.db.has_collection(edge_col):
                 self.db.create_collection(edge_col, edge=True)
 
@@ -86,7 +86,7 @@ class IMNetDB(object):
                 dict(edge_collection=edge_col,
                      from_vertex_collections=[_from_node],
                      to_vertex_collections=[_to_node])
-                for _from_node, edge_col, _to_node in models.rel_types
+                for _from_node, edge_col, _to_node in models.edge_defs
             ])
 
         self.graph = self.db.graph('master')

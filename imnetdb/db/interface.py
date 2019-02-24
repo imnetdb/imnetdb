@@ -12,30 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from arango.exceptions import AQLQueryExecuteError
-from imnetdb.nsotdb.node_utils import DictKeyCollection
 from first import first
 from string import Template
 
+from arango.exceptions import AQLQueryExecuteError
+from imnetdb.db.collection import TupleKeyCollection
 
-class InterfaceNodes(DictKeyCollection):
+
+class InterfaceNodes(TupleKeyCollection):
 
     COLLECTION_NAME = 'Interface'
 
-    def ensure(self, key, used=False, **fields):
+    def _key(self, key_tuple):
+        return {
+            'device': key_tuple[0]['name'],
+            'name': key_tuple[1]
+        }
+
+    def ensure(self, key_tuple, used=False, **fields):
         """
         Ensure the interface exists.  The key is a dict that contains the device, name values.
         The key can identify the device either by name 'device' or by the 'device_node' specifically.
 
         Parameters
         ----------
-        key : dict
-            device : str (optional)
-                The name of the Device node
-
-            device_node : dict (optional)
+        key_tuple: tuple
+            [0] device_node : dict (optional)
                 The Device node dict
-            name : str
+
+            [1] name : str
                 The interface name
 
         used : bool
@@ -50,11 +55,9 @@ class InterfaceNodes(DictKeyCollection):
         dict
             The interface node dict
         """
-        dev_node = key.get('device_node') or self.client.devices[key['device']]
-        if_node = super(InterfaceNodes, self).ensure(
-            dict(device=dev_node['name'], name=key['name']),
-            used=used, **fields)
-        self.client.ensure_edge((dev_node, 'equip_interface', if_node))
+
+        if_node = super(InterfaceNodes, self).ensure(key_tuple, used=used, **fields)
+        self.client.ensure_edge((key_tuple[0], 'equip_interface', if_node))
         return if_node
 
     _query_allocate_interface_fields = """

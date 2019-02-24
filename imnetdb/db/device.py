@@ -12,4 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imnetdb.nsotdb.client import IMNetDB
+from imnetdb.db.collection import NameKeyCollection, CommonNodeGroup
+
+
+class DeviceNodes(NameKeyCollection):
+    COLLECTION_NAME = 'Device'
+
+
+class DeviceGroupNodes(NameKeyCollection, CommonNodeGroup):
+    EDGE_NAME = 'device_member'
+    COLLECTION_NAME = 'DeviceGroup'

@@ -34,50 +34,11 @@ class CommonCollection(object):
         vert_col.delete(node)
 
 
-class DictKeyCollection(CommonCollection):
-
-    __aql_ensure_node = """
-    UPSERT @key
-    INSERT @fields
-    UPDATE @fields
-    IN @@col_name OPTIONS {keepNull: False}
-    RETURN {doc: NEW, old: OLD}
-    """
-
-    def ensure(self, key, **fields):
-        _fields = deepcopy(fields)
-        _fields.update(key)
-
-        result = first(self.query(self.__aql_ensure_node, bind_vars={
-            'key': key,
-            'fields': _fields,
-            '@col_name': self.COLLECTION_NAME
-        }))
-
-        return result['doc']
-
-    def __getitem__(self, key_dict):
-        """
-        Return a document node dict that has a key value of `name`.
-
-        Parameters
-        ----------
-        key_dict : dict
-            Dictionary containing the fields to match on.
-
-        Returns
-        -------
-        dict
-            The document node dict
-
-        None
-            If there is not document matching key_dict fields.
-        """
-        return first(self.col.find(key_dict, limit=1))
-
-
 class NameKeyCollection(CommonCollection):
-
+    """
+    The document collection _key is the field.name value.  This value must be globally unique within
+    the collection.
+    """
     __aql_ensure_node = """
     UPSERT {_key: @fields.name}
     INSERT @fields
@@ -117,7 +78,9 @@ class NameKeyCollection(CommonCollection):
         return self.col.get(name)
 
 
-class NamedKeyNodeGroup(NameKeyCollection):
+# class NamedKeyNodeGroup(NameKeyCollection):
+
+class CommonNodeGroup(CommonCollection):
     EDGE_NAME = None
 
     def add_member(self, group_node, member_node):
@@ -175,3 +138,92 @@ class NamedKeyNodeGroup(NameKeyCollection):
             'group_name': group_node['name'],
             '@edge_name': self.EDGE_NAME
         }))
+
+
+class DictKeyCollection(CommonCollection):
+
+    __aql_ensure_node = """
+    UPSERT @key
+    INSERT @fields
+    UPDATE @fields
+    IN @@col_name OPTIONS {keepNull: False}
+    RETURN {doc: NEW, old: OLD}
+    """
+
+    def ensure(self, key, **fields):
+        _fields = deepcopy(fields)
+        _fields.update(key)
+
+        result = first(self.query(self.__aql_ensure_node, bind_vars={
+            'key': key,
+            'fields': _fields,
+            '@col_name': self.COLLECTION_NAME
+        }))
+
+        return result['doc']
+
+    def __getitem__(self, key_dict):
+        """
+        Return a document node dict that has a key value of `name`.
+
+        Parameters
+        ----------
+        key_dict : dict
+            Dictionary containing the fields to match on.
+
+        Returns
+        -------
+        dict
+            The document node dict
+
+        None
+            If there is not document matching key_dict fields.
+        """
+        return first(self.col.find(key_dict, limit=1))
+
+
+class TupleKeyCollection(CommonCollection):
+
+    __aql_ensure_node = """
+    UPSERT @key
+    INSERT @fields
+    UPDATE @fields
+    IN @@col_name OPTIONS {keepNull: False}
+    RETURN {doc: NEW, old: OLD}
+    """
+
+    def _key(self, key_tuple):
+        raise NotImplementedError()
+
+    def ensure(self, key_tuple, **fields):
+        key = self._key(key_tuple)
+        _fields = deepcopy(fields)
+        _fields.update(key)
+
+        result = first(self.query(self.__aql_ensure_node, bind_vars={
+            'key': key,
+            'fields': _fields,
+            '@col_name': self.COLLECTION_NAME
+        }))
+
+        return result['doc']
+
+    def __getitem__(self, key_tuple):
+        """
+        Return a document node dict that has a key value of `name`.
+
+        Parameters
+        ----------
+        key_tuple : tuple
+            [0]: primary node dict
+            [1]: name
+
+        Returns
+        -------
+        dict
+            The document node dict
+
+        None
+            If there is not document matching key_dict fields.
+        """
+        return first(self.col.find(self._key(key_tuple), limit=1))

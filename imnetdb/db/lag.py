@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imnetdb.nsotdb.node_utils import DictKeyCollection
+from imnetdb.db.collection import TupleKeyCollection
+
 from first import first
 
 
-class LAGNodes(DictKeyCollection):
+class LAGNodes(TupleKeyCollection):
 
     COLLECTION_NAME = 'LAG'
+
+    def _key(self, key_tuple):
+        return dict(device=key_tuple[0]['name'], name=key_tuple[1])
 
     def add_interface(self, lag_node, interface_node):
         """

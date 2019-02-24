@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from first import first
-from imnetdb.nsotdb import node_utils
+from imnetdb.db.collection import CommonCollection
 
 
-class CableNodes(node_utils.CommonCollection):
+class CableNodes(CommonCollection):
 
     COLLECTION_NAME = 'Cable'
 

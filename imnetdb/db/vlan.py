@@ -12,20 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-nodes_types = [
-    'Cable',
-    'Device', 'DeviceGroup',
-    'Interface',
-    'IPAddress', 'IPNetwork', 'IPInterface',
-    'LAG',
-    'VLAN', 'VLANGroup'
-]
+from imnetdb.db.collection import NameKeyCollection, CommonNodeGroup
 
-rel_types = [
-    ('Device',      'device_member',        'DeviceGroup'),
-    ('Device',      'equip_interface',      'Interface'),
-    ('Interface',   'lag_member',           'LAG'),
-    ('Interface',   'cabled',               'Cable'),
-    ('VLAN',        "vlan_member",          'VLANGroup')
-]
 
+class VlanNodes(NameKeyCollection):
+    COLLECTION_NAME = 'VLAN'
+
+
+class VlanGroupNodes(NameKeyCollection, CommonNodeGroup):
+    COLLECTION_NAME = 'VLANGroup'
+    EDGE_NAME = 'vlan_member'

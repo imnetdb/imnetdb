@@ -1,22 +1,19 @@
-from collections import defaultdict
 
 
-def test_cabling(imnetdb):
-    nodes = defaultdict(dict)
+def test_cabling_pass(imnetdb):
 
-    imnetdb.wipe_database()
-    imnetdb.ensure_database()
+    imnetdb.reset_database()
 
-    nodes['device']['spine1'] = imnetdb.devices.ensure('spine1', role='spine')
-    nodes['device']['leaf1'] = imnetdb.devices.ensure('leaf1', role='leaf')
+    spine1 = imnetdb.devices.ensure('spine1', role='spine')
+    if_0 = imnetdb.interfaces.ensure((spine1, 'eth0'))
+    imnetdb.interfaces.ensure((spine1, 'eth1'))
+    imnetdb.interfaces.ensure((spine1, 'eth2'))
 
-    if_0 = imnetdb.interfaces.ensure(dict(device='spine1', name='eth0'))
-    imnetdb.interfaces.ensure(dict(device='spine1', name='eth1'))
-    imnetdb.interfaces.ensure(dict(device='spine1', name='eth2'))
+    leaf1 = imnetdb.devices.ensure('leaf1', role='leaf')
 
-    imnetdb.interfaces.ensure(dict(device='leaf1', name='eth0'))
-    if_1 = imnetdb.interfaces.ensure(dict(device='leaf1', name='eth1'))
-    imnetdb.interfaces.ensure(dict(device='leaf1', name='eth2'))
+    imnetdb.interfaces.ensure((leaf1, 'eth0'))
+    if_1 = imnetdb.interfaces.ensure((leaf1, 'eth1'))
+    imnetdb.interfaces.ensure((leaf1, 'eth2'))
 
     cable_node1 = imnetdb.cabling.ensure(interface_nodes=[if_0, if_1],
                                          role='leaf-spine', mode='fiber')
@@ -27,8 +24,11 @@ def test_cabling(imnetdb):
 
 
 def test_cabling_one_side(imnetdb):
-    if_0 = imnetdb.interfaces[dict(device='spine1', name='eth0')]
-    if_1 = imnetdb.interfaces[dict(device='leaf1', name='eth1')]
+    spine1 = imnetdb.devices['spine1']
+    leaf1 = imnetdb.devices['leaf1']
+
+    if_0 = imnetdb.interfaces[(spine1, 'eth0')]
+    if_1 = imnetdb.interfaces[(leaf1, 'eth1')]
 
     found_0 = imnetdb.cabling.find(interface_nodes=[if_0])
     found_1 = imnetdb.cabling.find(interface_nodes=[if_1])
@@ -37,7 +37,8 @@ def test_cabling_one_side(imnetdb):
 
 
 def test_cabling_remove(imnetdb):
-    if_0 = imnetdb.interfaces[dict(device='spine1', name='eth0')]
+    spine1 = imnetdb.devices['spine1']
+    if_0 = imnetdb.interfaces[(spine1, 'eth0')]
 
     found_0 = imnetdb.cabling.find(interface_nodes=[if_0])
     cable_node = found_0['cable_node']

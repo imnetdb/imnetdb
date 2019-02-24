@@ -10,12 +10,10 @@ def _setup_test(imnetdb):
     device_node = imnetdb.devices.ensure(device_name)
 
     for if_name in bracket_expansion("Ethernet[1-48]"):
-        imnetdb.interfaces.ensure(dict(device_node=device_node, name=if_name),
-                                  speed=10, role='server')
+        imnetdb.interfaces.ensure((device_node, if_name), speed=10, role='server')
 
     for if_name in bracket_expansion("Ethernet[49-56]"):
-        imnetdb.interfaces.ensure(dict(device_node=device_node, name=if_name),
-                                  speed=100, role='fabric')
+        imnetdb.interfaces.ensure((device_node, if_name), speed=100, role='fabric')
 
     return device_name, imnetdb
 

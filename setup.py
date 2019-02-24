@@ -15,7 +15,7 @@
 from setuptools import setup, find_packages
 
 package_version = '0.0.1'
-package_name = 'imnetdb-nsotdb'
+package_name = 'db-db'
 
 
 def requirements(filename='requirements.txt'):

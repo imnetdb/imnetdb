@@ -3,7 +3,7 @@ version: '3.3'
 services:
 
   imnetdb:
-    container_name: imnetdb
+    container_name: db
     image: "arangodb/arangodb:latest"
     environment:
       - ARANGO_ROOT_PASSWORD=admin123
