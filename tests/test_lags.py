@@ -12,12 +12,12 @@ def create_device(imnetdb, device_name, if_name_expr):
     lag_node = imnetdb.lags.ensure((dev_node, 'ae0'))
 
     for if_node in if_nodes[0:2]:
-        imnetdb.lags.add_interface(lag_node, if_node)
+        imnetdb.lags.add_member(lag_node, if_node)
 
     lag_node = imnetdb.lags.ensure((dev_node, 'ae1'))
 
     for if_node in if_nodes[2:4]:
-        imnetdb.lags.add_interface(lag_node, if_node)
+        imnetdb.lags.add_member(lag_node, if_node)
 
     return dev_node, lag_node, if_nodes
 
@@ -29,7 +29,7 @@ def test_lag_basic(imnetdb):
 
     # read back the LAGS for this device.
 
-    lag_dataset = imnetdb.lags.device_catalog(dev_node['name'])
+    lag_dataset = imnetdb.lags.catalog_device(dev_node['name'])
     assert list(lag_dataset) == ['ae0', 'ae1']
 
 

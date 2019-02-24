@@ -12,51 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from imnetdb.db.collection import TupleKeyCollection
-
 from first import first
 
+from imnetdb.db.collection import TupleKeyCollection, CommonNodeGroup
 
-class LAGNodes(TupleKeyCollection):
+
+class LAGNodes(TupleKeyCollection, CommonNodeGroup):
 
     COLLECTION_NAME = 'LAG'
+    EDGE_NAME = 'lag_member'
 
     def _key(self, key_tuple):
         return dict(device=key_tuple[0]['name'], name=key_tuple[1])
-
-    def add_interface(self, lag_node, interface_node):
-        """
-        Add an interface to a LAG
-
-        Parameters
-        ----------
-        lag_node : dict
-            The LAG node dict
-
-        interface_node : dict
-            The Interface node dict
-        """
-        self.client.ensure_edge((interface_node, 'lag_member', lag_node))
-
-    def del_interface(self, lag_node, interface_node):
-        """
-        Remove an interface from a LAG
-
-        Parameters
-        ----------
-        lag_node : dict
-            The LAG node dict
-
-        interface_node : dict
-            The Interface node dict
-        """
-        self.client.ensure_edge((interface_node, 'lag_member', lag_node), present=False)
 
     _query_lag_members = """
     FOR lag in LAG
         FILTER lag.device == @device_name and lag.name == @lag_name
         for interface in inbound lag lag_member
-            return interface    
+            return interface
     """
 
     def get_members(self, lag_node):
@@ -90,7 +63,7 @@ class LAGNodes(TupleKeyCollection):
     )              
     """
 
-    def device_catalog(self, device_name):
+    def catalog_device(self, device_name):
         """
         Return a catalog of all LAGs and associated interfaces given the specific device name.
 
