@@ -82,9 +82,7 @@ class InterfaceNodes(TupleKeyCollection):
     _query_allocate_interface_filter_speed = """
     LET if_node_list = (
         FOR interface in Interface
-            FILTER interface.device == @device_name and 
-                   interface.used == false and 
-                   interface.speed == @speed
+            FILTER interface.device == @device_name and interface.used == false and interface.speed == @speed
             LIMIT @count
             UPDATE interface WITH update_fields IN Interface
             OPTIONS { keepNull: false }
@@ -95,7 +93,7 @@ class InterfaceNodes(TupleKeyCollection):
     _query_allocate_interface_filter_user_defined = Template("""
     LET if_node_list = (
         FOR interface in Interface
-            FILTER interface.device == @device_name
+            FILTER interface.device == @device_name and interface.used == false
             FILTER ${user_defined_filter} 
             LIMIT @count
             UPDATE interface WITH update_fields IN Interface
