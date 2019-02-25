@@ -13,6 +13,7 @@ with.  These include the following:
    * **DeviceGroup** - represents a group of devices
    * **Interface** - represents a device interface
    * **Cable** - represents the connection between two device interfaces
+   * **LAG** - represents Link Aggregation Groups
 
 *Virtual Networking*   
    * **VLAN** - represents a VLAN
@@ -89,7 +90,7 @@ http://localhost:8529
 # Usage
 
 The first step is to connect to the database.  If the database does not exist, it will automatically be
-created based on the defined nodes and edges defined in the [models.py](imnetdb/db/models.py) file.  You
+created based on the defined nodes and edges defined in the [models.py](imnetdb/db/basic_db_model.py) file.  You
 can create different databases, each representing your specific network application.  If you do not provide
 the `db_name` parameters, the default value is "imnetdb".
 

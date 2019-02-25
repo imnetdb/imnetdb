@@ -14,59 +14,79 @@
 
 from collections import defaultdict
 import retrying
+from first import first
 
 from arango import ArangoClient
 from arango.exceptions import ServerConnectionError
-from imnetdb.db import models
+from pkg_resources import iter_entry_points
 
-from imnetdb.db.device import DeviceNodes, DeviceGroupNodes
-from imnetdb.db.interface import InterfaceNodes
-from imnetdb.db.cabling import CableNodes
-from imnetdb.db.lag import LAGNodes
-from imnetdb.db.vlan import VlanNodes, VlanGroupNodes
-from imnetdb.db.ipaddrs import (
-    RoutingTableNodes,
-    IPAddressNodes, IPInterfaceNodes, IPNetworkNodes
-)
 
 __all__ = ['IMNetDB']
 
 
 class IMNetDB(object):
 
-    def __init__(self, password, user='root', db_name='imnetdb',
-                 host='0.0.0.0', port=8529, timeout=10):
+    def __init__(self, password, user='root',
+                 db_name='imnetdb', db_model_name='basic',
+                 host='0.0.0.0', port=8529, connect_timeout=10):
+        """
+        Create a client instance to the IMNetDB stored within the ArangoDB server.  If the database
+        does not exist, then it will be created, using the registered the database model (nodes/edges) name.
+        For reference, the basic database model is located in the basic_db_model.py file.
 
-        self._arango = ArangoClient(host=host, port=port)
-        self._sysdb = self._arango.db('_system', username=user, password=password)
+        Parameters
+        ----------
+        password : str
+            The login password value
 
-        self.db = None
-        self.db_name = db_name
-        self.graph = None
-        self.query = None
+        user : str (optional)
+            The login user-name, defaults to 'root'
+
+        db_name : str (optional)
+            The name of the database
+
+        db_model_name : str (optional)
+            The name of the database model.  This corresponds to a registered name
+            that defines the database nodes and edges
+
+        host : str (optional)
+            The ArangoDB server host-name or ip-addr
+
+        port : int (optional)
+            The ArangoDB server port value
+
+        connect_timeout : int (optional)
+            When connecting to the ArangoDB server, this value defines the timeout in seconds
+            before aborting.
+        """
 
         self._user = user
         self._password = password
 
+        self._arango = ArangoClient(host=host, port=port)
+        self._sysdb = self._arango.db('_system', username=self._user, password=self._password)
+
+        self.db_name = db_name
+        self.db_model_name = db_model_name
+        self.db_model = None
+
+        self.db = None
+        self.graph = None
+        self.query = None
+
         @retrying.retry(retry_on_exception=lambda e:  isinstance(e, ServerConnectionError),
-                        stop_max_delay=timeout * 1000)
-        def _await_arange_server():
+                        stop_max_delay=connect_timeout * 1000)
+        def _await_arangodb_server():
             self._sysdb.ping()
 
-        _await_arange_server()
+        _await_arangodb_server()
         self.ensure_database()
+        self._bind_entry_points()
 
-        self.device_groups = DeviceGroupNodes(client=self)
-        self.devices = DeviceNodes(client=self)
-        self.interfaces = InterfaceNodes(client=self)
-        self.cabling = CableNodes(client=self)
-        self.lags = LAGNodes(client=self)
-        self.vlans = VlanNodes(client=self)
-        self.vlan_groups = VlanGroupNodes(client=self)
-        self.routing_tables = RoutingTableNodes(client=self)
-        self.ip_host_addrs = IPAddressNodes(client=self)
-        self.ip_net_addrs = IPNetworkNodes(client=self)
-        self.ip_if_addrs = IPInterfaceNodes(client=self)
+    def _bind_entry_points(self):
+        for ep in iter_entry_points('imnetdb_collections'):
+            cls = ep.load()
+            setattr(self, ep.name, cls(client=self))
 
     def reset_database(self):
         self.wipe_database()
@@ -78,9 +98,9 @@ class IMNetDB(object):
     def ensure_master_graph(self, graph_name='master'):
 
         if not self.db.has_graph(graph_name):
-            build = defaultdict(lambda : dict(from_vertex_collections=set(), to_vertex_collections=set()))
+            build = defaultdict(lambda: dict(from_vertex_collections=set(), to_vertex_collections=set()))
 
-            for from_vc, edge_name, to_vc in models.edge_defs:
+            for from_vc, edge_name, to_vc in self.db_model['edges']:
                 build[edge_name]['from_vertex_collections'].add(from_vc)
                 build[edge_name]['to_vertex_collections'].add(to_vc)
 
@@ -94,6 +114,11 @@ class IMNetDB(object):
         self.graph = self.db.graph(graph_name)
 
     def ensure_database(self):
+        db_ep = first(iter_entry_points('imnetdb_database_models', self.db_model_name))
+        if not db_ep:
+            raise RuntimeError("Unable to load database model {}".format(self.db_model_name))
+
+        self.db_model = db_ep.load()
         if not self._sysdb.has_database(self.db_name):
             self._sysdb.create_database(self.db_name, users=[
                 dict(username=self._user, password=self._password, active=True)])
@@ -101,11 +126,11 @@ class IMNetDB(object):
         self.db = self._arango.db(self.db_name, username=self._user, password=self._password)
         self.query = self.db.aql.execute
 
-        for node_type in models.nodes_types:
+        for node_type in self.db_model['nodes']:
             if not self.db.has_collection(node_type):
                 self.db.create_collection(node_type)
 
-        for _from_node, edge_col, _to_node in models.edge_defs:
+        for _from_node, edge_col, _to_node in self.db_model['edges']:
             if not self.db.has_collection(edge_col):
                 self.db.create_collection(edge_col, edge=True)
 
