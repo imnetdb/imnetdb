@@ -1,5 +1,8 @@
 PACKAGE = $(python setup.py --name)
 
+all:
+	@ python setup.py develop
+
 clean:
 	@ $(MAKE) -C tests clean
 	@ python setup.py clean
