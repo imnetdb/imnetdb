@@ -3,19 +3,32 @@
 As a network automation engineer you may want to create applications that have a database backend that stores
 the "source of truth" or "intent" of your network and services.  This repo contains a Python library that
 uses the [ArangoDB](https://www.arangodb.com/) database software to create such application-specific backed
-databases.
+databases.  While every application will ultimately be different, there are a common set of networking constructs to get started 
+with.  
 
-While every application will ultimately be different, there are a common set of networking constructs to get started 
-with.  These include the following:
+This library is meant to be a "low level" programming interface, but provide specific capabilities that are 
+commonly needed for network management oriented applications.  For example, this library supports the ability
+to "allocate unused interfaces" and manage "cable relationships between devices".  This library also contains 
+constructs so that you, as a python develooper, can create your own new database nodes and edges and extend the use 
+of this repo in a way that is specific to your application.
 
+## Basic Database Building Block
+
+The following constructs are provided as part of the "basic" data model.  These constructs act more as
+scafolding since there are no pre-defined schema/field definitions.  As a developer, you can choose what
+fields to place in each of these node types.  In addition to these node types, the basic data model 
+defines a set of relationship types.  For details refer to the file [basic_db_model.py](imnetdb/db/basic_db_model.py).
+ 
 *Basic Device*
+
    * **Device** - represents a single managed device
    * **DeviceGroup** - represents a group of devices
    * **Interface** - represents a device interface
    * **Cable** - represents the connection between two device interfaces
    * **LAG** - represents Link Aggregation Groups
 
-*Virtual Networking*   
+*Virtual Networking*
+   
    * **VLAN** - represents a VLAN
    * **VLANGroup** - represents a group of VLANs
    
@@ -26,11 +39,12 @@ with.  These include the following:
    * **IPNetwork** - represents an IPv4 or IPv6 network address
    * **IPInterface** - represents an IPv4 or IPv6 interface address
 
-This library is meant to be a "low level" programming interface, but provide specific capabilities that are 
-commonly needed for network management oriented applications.  For example, this library supports the ability
-to "allocate unused interfaces" and manage "cable relationships between devices".  This library also contains 
-constructs so that you, as a python develooper, can create your own new database nodes and edges and extend the use 
-of this repo in a way that is specific to your application.
+## Resource Management
+
+Another common aspect of building a NSOT application is managing "resources" such as IP addresses, ASN values,
+VLAN numbers, or any *pool* of data.  The IMNetDB library defines a Resource Database construct and a 
+resource pool mechanism that allows you to put/take items from your defined pools.
+
    
 # Why ArangoDB
 
