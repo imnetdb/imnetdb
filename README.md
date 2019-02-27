@@ -43,7 +43,8 @@ defines a set of relationship types.  For details refer to the file [basic_db_mo
 
 Another common aspect of building a NSOT application is managing "resources" such as IP addresses, ASN values,
 VLAN numbers, or any *pool* of data.  The IMNetDB library defines a Resource Database construct and a 
-resource pool mechanism that allows you to put/take items from your defined pools.
+resource pool mechanism that allows you to put/take items from your defined pools.  For more
+details, refer to [rpools](imnetdb/rpools).
 
    
 # Why ArangoDB
