@@ -1,4 +1,5 @@
 from first import first
+from string import Template
 
 
 class ResourcePool(object):
@@ -45,23 +46,24 @@ class ResourcePool(object):
             'user_defined_fields': user_defined_fields
         })
 
-    _query_take_key = """
+    _query_take_key = Template("""
     LET find_key = MERGE(@user_key, {used: true})
     
     LET found = FIRST(
-        FOR pool_item IN @@col_name
-            FILTER MATCHES(pool_item, find_key)
+        FOR item IN @@col_name
+            FILTER MATCHES(item, find_key)
             LIMIT 1
-            RETURN pool_item
+            RETURN item
     )
     
     LET runQuery = found != null ? [] : [1]
     
     LET alternative = FIRST(FOR dummy IN runQuery 
-        FOR pool_item IN @@col_name
-            FILTER pool_item.used == false
+        FOR item IN @@col_name
+            FILTER item.used == false
+            ${user_defined_filter}
             LIMIT 1
-            UPDATE pool_item WITH MERGE(
+            UPDATE item WITH MERGE(
                 {used: true},
                 @user_key,
                 @user_defined_fields)
@@ -70,9 +72,9 @@ class ResourcePool(object):
     )
     
     RETURN found ? {doc: found, exists: true} : {doc: alternative, new: true}
-    """
+    """)
 
-    def take(self, key, **fields):
+    def take(self, key, match=None, **fields):
         """
         Take an item from the pool that has a specific key value; if such a key does not exist, then
         take an unused item and assign the key.  Include/update the item with any additional field kwargs
@@ -81,6 +83,9 @@ class ResourcePool(object):
         ----------
         key : dict
             The fields that make a unique identity within the pool.
+
+        match : dict (optional)
+            A set of fields that must be matched for selection of unused items
 
         Other Parameters
         ----------------
@@ -101,7 +106,14 @@ class ResourcePool(object):
             'user_defined_fields': fields
         }
 
-        found = first(self.query(self._query_take_key, bind_vars=bind_vars))
+        user_defined_filter = ''
+
+        if match:
+            user_defined_filter = "FILTER MATCHES(item, @user_defined_match)"
+            bind_vars['user_defined_match'] = match
+
+        query = self._query_take_key.substitute(user_defined_filter=user_defined_filter)
+        found = first(self.query(query, bind_vars=bind_vars))
         doc = found['doc']
 
         # if there are no more items in the pool, then return None now.
@@ -121,17 +133,18 @@ class ResourcePool(object):
         fields_exist = all(f in doc and doc[f] == v for f, v in fields.items())
         return doc if fields_exist else self.col.update(dict(doc, **fields), return_new=True)['new']
 
-    _query_take_batch = """
-    FOR pool_item in @@col_name
-        FILTER pool_item.used == false
+    _query_take_batch = Template("""
+    FOR item in @@col_name
+        FILTER item.used == false
+        ${user_defined_filter}
         LIMIT @count
-        UPDATE pool_item 
+        UPDATE item 
             WITH MERGE({used: true}, @user_defined_fields)
         INTO @@col_name
         RETURN NEW
-    """
+    """)
 
-    def take_batch(self, count=1, **fields):
+    def take_batch(self, count=1, match=None, **fields):
         """
         Take a batch of count items from the pool.  Any additional fields will be stored within all
         items as they are taken.  If you want to "key" each item, you will need to make a subsequent call
@@ -145,6 +158,9 @@ class ResourcePool(object):
         count : int (optional)
             The number of items to take from the pool.
 
+        match : dict (optional)
+            A set of fields that must be matched for selection of unused items
+
         Other Parameters
         ----------------
         fields are user-defined kwargs to store into all of the items.
@@ -155,11 +171,20 @@ class ResourcePool(object):
             List of allocated nodes
         """
 
-        return list(self.query(self._query_take_batch, bind_vars={
+        bind_vars = {
             '@col_name': self.col.name,
             'count': count,
             'user_defined_fields': fields
-        }))
+        }
+
+        user_defined_filter = ''
+
+        if match:
+            user_defined_filter = "FILTER MATCHES(item, @user_defined_match)"
+            bind_vars['user_defined_match'] = match
+
+        query = self._query_take_batch.substitute(user_defined_filter=user_defined_filter)
+        return list(self.query(query, bind_vars=bind_vars))
 
     _query_reset_clear_fields = """
     FOR pool_item in @@col_name
