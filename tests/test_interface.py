@@ -21,33 +21,54 @@ def _setup_test(imnetdb):
 def test_interface_alloc_pass(_setup_test):
     device_name, imnetdb = _setup_test
 
-    if_node_list = imnetdb.interfaces.allocate(device_name, count=10, speed=10)
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match={'device': device_name, 'speed': 10},
+        count=10)
+
     assert len(if_node_list) == 10
 
-    if_node_list = imnetdb.interfaces.allocate(device_name, count=8, speed=100)
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match={'device': device_name, 'speed': 100},
+        count=8)
+
     assert len(if_node_list) == 8
 
 
 def test_interface_alloc_fail(_setup_test):
     device_name, imnetdb = _setup_test
 
-    if_node_list = imnetdb.interfaces.allocate(device_name, count=49, speed=10)
-    assert if_node_list is None
+    # take batch will take only as many as it can, returning the
+    # items taken.  we know there are 48x10g ports.  try to take 49.
 
-    if_node_list = imnetdb.interfaces.allocate(device_name, count=9, speed=100)
-    assert if_node_list is None
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match=dict(device=device_name, speed=10),
+        count=49)
+
+    assert len(if_node_list) == 48
+
+    # we know there are only 8x100g ports.  try to take 9
+
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match=dict(device=device_name, speed=100),
+        count=9)
+
+    assert len(if_node_list) == 8
 
 
 def test_interface_alloc_pass_by_role(_setup_test):
     device_name, imnetdb = _setup_test
 
-    if_node_list = imnetdb.interfaces.allocate(
-        device_name, count=5, filters='interface.role == "server"')
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match=dict(device=device_name, role='server'),
+        count=5)
 
     assert len(if_node_list) == 5
 
-    if_node_list = imnetdb.interfaces.allocate(
-        device_name, count=5, filters='interface.role == "shamu"'
-    )
+    # there are no "shamu" ports, so we should get back and empty list
 
-    assert if_node_list is None
+    if_node_list = imnetdb.interfaces.pool.take_batch(
+        match=dict(device=device_name, role='shamu'),
+        count=5)
+
+    assert len(if_node_list) == 0
+

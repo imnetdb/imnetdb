@@ -21,13 +21,18 @@ __all__ = ['RPoolsDB']
 
 
 class RPoolsDB(CommonDBClient):
+    """
+    About Using a Resource Database
+    -------------------------------
+    # TODO: need to write this up.
+    """
 
     def __init__(self, password, user='root', db_name='rpools',
                  host='0.0.0.0', port=8529, connect_timeout=10):
         """
-        Create a client instance to the IMNetDB stored within the ArangoDB server.  If the database
-        does not exist, then it will be created, using the registered the database model (nodes/edges) name.
-        For reference, the basic database model is located in the basic_db_model.py file.
+        Create a client instance to the RPoolsDB stored within the ArangoDB server.  If the database
+        does not exist, then it will be created.  Once available, the caller can then define new
+        collections in the database using  :meth:`resource_pool`.
 
         Parameters
         ----------
@@ -54,4 +59,24 @@ class RPoolsDB(CommonDBClient):
                                        host=host, port=port, connect_timeout=connect_timeout)
 
     def resource_pool(self, pool_name, value_type=str):
+        """
+        Ensure that a resource pool (database collection) exists by the given `pool_name`.  If it does not
+        exist, then it will be created.
+
+        Parameters
+        ----------
+        pool_name : str
+            The pool name.
+
+        value_type : type (optional)
+            The item value type, by default is a string.  This property is used when adding
+            new items to the pool.  The value_type will be called against each item to ensure
+            that it stored as the type desired.  Therefore, the caller could provide any
+            callable, providing it returns a value that can be stored within the ArangoDB document.
+
+        Returns
+        -------
+        ResourcePool
+            An instance of the resource pool.
+        """
         return ResourcePool(client=self, collection_name=pool_name, value_type=value_type)

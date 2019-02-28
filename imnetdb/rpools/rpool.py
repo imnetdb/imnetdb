@@ -3,6 +3,11 @@ from string import Template
 
 
 class ResourcePool(object):
+    """
+    About Resource Pools
+    --------------------
+    # TODO: need to write this up.
+    """
 
     def __init__(self, client, collection_name, value_type=str):
         self.client = client
@@ -15,19 +20,37 @@ class ResourcePool(object):
         return self.col.all()
 
     _query_add_new_items = """
-    FOR item IN @items
+    FOR value IN @values
         INSERT 
-            MERGE({value: item}, @user_defined_fields)
+            MERGE({value: value}, @user_defined_fields)
         INTO @@col_name
     """
 
-    def add(self, items, used=False, **fields):
+    def add(self, value, used=False, **fields):
+        """
+        Add a single item to the pool.
+
+        Parameters
+        ----------
+        value : int|str|bool
+            The item value to add to the pool
+
+        used : bool (optional)
+            The initial setting of the used flag
+
+        Other Parameters
+        ----------------
+        fields are user-defined fields to be stored into the item
+        """
+        self.col.insert(dict(value=value, used=used, **fields))
+
+    def add_batch(self, values, used=False, **fields):
         """
         Add new items into the pool so that they can be later taken.
 
         Parameters
         ----------
-        items : Iterable
+        values : Iterable
 
         used : bool (optional)
             The initial used state
@@ -37,27 +60,53 @@ class ResourcePool(object):
         fields are a comment set of values that will be stored into all items.
         """
 
-        actual_items = [self.value_type(item) for item in items]
+        actual_items = [self.value_type(item) for item in values]
         user_defined_fields = dict(fields, used=used)
 
         self.query(self._query_add_new_items, bind_vars={
             '@col_name': self.col.name,
-            'items': actual_items,
+            'values': actual_items,
             'user_defined_fields': user_defined_fields
         })
 
+    # _query_take_key = Template("""
+    # LET find_key = MERGE(@user_key, {used: true})
+    #
+    # LET found = FIRST(
+    #     FOR item IN @@col_name
+    #         FILTER MATCHES(item, find_key)
+    #         LIMIT 1
+    #         RETURN item
+    # )
+    #
+    # LET runQuery = found != null ? [] : [1]
+    #
+    # LET alternative = FIRST(FOR dummy IN runQuery
+    #     FOR item IN @@col_name
+    #         FILTER item.used == false and MATCHES(item, @user_key)
+    #         ${user_defined_filter}
+    #         LIMIT 1
+    #         UPDATE item WITH MERGE(
+    #             {used: true},
+    #             @user_key,
+    #             @user_defined_fields)
+    #         INTO @@col_name
+    #         RETURN NEW
+    # )
+    #
+    # RETURN found ? {doc: found, exists: true} : {doc: alternative, new: true}
+    # """)
+
     _query_take_key = Template("""
-    LET find_key = MERGE(@user_key, {used: true})
-    
     LET found = FIRST(
         FOR item IN @@col_name
-            FILTER MATCHES(item, find_key)
+            FILTER MATCHES(item, @user_key)
             LIMIT 1
             RETURN item
     )
-    
+
     LET runQuery = found != null ? [] : [1]
-    
+
     LET alternative = FIRST(FOR dummy IN runQuery 
         FOR item IN @@col_name
             FILTER item.used == false
@@ -70,7 +119,7 @@ class ResourcePool(object):
             INTO @@col_name
             RETURN NEW
     )
-    
+
     RETURN found ? {doc: found, exists: true} : {doc: alternative, new: true}
     """)
 
@@ -124,12 +173,14 @@ class ResourcePool(object):
         # if the item is new, then it contains all of the fields provided.  if it is an existing
         # item, and no new fields provided by caller, then we can return the doc now.
 
-        if ('new' in found) or (not fields):
+        if 'new' in found:
             return doc
 
-        # if here, then caller has provided fields, and the existing doc may need to be
-        # updated.  if all of the fields exist as they are, then no update, otherwise do an update
+        # if here, the existing doc may need to be updated.
+        # if all of the fields exist as they should be, include used=True
+        # then no update, otherwise do an update
 
+        fields['used'] = True
         fields_exist = all(f in doc and doc[f] == v for f, v in fields.items())
         return doc if fields_exist else self.col.update(dict(doc, **fields), return_new=True)['new']
 

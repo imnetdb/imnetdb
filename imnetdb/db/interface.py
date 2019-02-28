@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from first import first
-from string import Template
-
-from arango.exceptions import AQLQueryExecuteError
 from imnetdb.db.collection import TupleKeyCollection
 
 
 class InterfaceNodes(TupleKeyCollection):
 
     COLLECTION_NAME = 'Interface'
+
+    def __init__(self, client):
+        super(InterfaceNodes, self).__init__(client=client)
+        self.pool = client.resource_pool('RPOOL_%s' % self.COLLECTION_NAME)
 
     def _key(self, key_tuple):
         return {
@@ -55,161 +55,72 @@ class InterfaceNodes(TupleKeyCollection):
         dict
             The interface node dict
         """
+        device_node, if_name = key_tuple
+        if_node = super(InterfaceNodes, self).ensure(key_tuple, **fields)
+        self.client.ensure_edge((device_node, 'equip_interface', if_node))
 
-        if_node = super(InterfaceNodes, self).ensure(key_tuple, used=used, **fields)
-        self.client.ensure_edge((key_tuple[0], 'equip_interface', if_node))
+        # add the if_node id as the value in the resource pool.  copy the user-defined
+        # fields by default into the pool as well, so that they can be later used for matching purposes.
+
+        # WARNING: you should consider these fields as "constants" in the pool node because if they are
+        # changed in the Interface node dict, those changes WILL NOT be reflected into the pool node.  For example,
+        # if you create an interface with "role=server" and then change the Interface node role value
+        # to "role=spine", then the corresponding pool doc will not be updated.  In these cases, you will
+        # need to remove the pool node and then add a new pool node with the new "constant field" values.
+
+        self.pool.add(value=if_node['_id'],
+                      device=device_node['name'], name=if_node['name'],
+                      **fields)
+
         return if_node
 
-    _query_allocate_interface_fields = """
-    LET update_fields = MERGE(
-        {used: true},
-        @update_fields
-    )
-
-    """
-
-    _query_allocate_interface_filter_any = """
-    LET if_node_list = (
-        FOR interface in Interface
-            FILTER interface.device == @device_name and interface.used == false
-            LIMIT @count
-            UPDATE interface WITH update_fields IN Interface
-            OPTIONS { keepNull: false }
-            return NEW
-    )
-    """
-
-    _query_allocate_interface_filter_speed = """
-    LET if_node_list = (
-        FOR interface in Interface
-            FILTER interface.device == @device_name and interface.used == false and interface.speed == @speed
-            LIMIT @count
-            UPDATE interface WITH update_fields IN Interface
-            OPTIONS { keepNull: false }
-            return NEW
-    )
-    """
-
-    _query_allocate_interface_filter_user_defined = Template("""
-    LET if_node_list = (
-        FOR interface in Interface
-            FILTER interface.device == @device_name and interface.used == false
-            FILTER ${user_defined_filter} 
-            LIMIT @count
-            UPDATE interface WITH update_fields IN Interface
-            OPTIONS { keepNull: false }
-            return NEW
-    )
-    """)
-
-    _query_allocate_interface_return = """
-
-    RETURN LENGTH(if_node_list) == @count ? if_node_list : FAIL("Count not allocated")    
-    """
-
-    def allocate(self, device_name, count, speed=None, filters=None, **fields):
+    def take(self, device, name):
         """
-        Allocate the `count` number of unused interfaces; i.e. find those that are 'used == False'
-        and also matching other filters criteria.  If the number of interfaces cannot be allocated
-        then this method will return None.  If the interfaces are allocated, then the 'used' field
-        will be set to True, any specific `fields` provided will be assigned, and the list of
-        Interface node dicts will be returned.
+        Take the interface node given the device name and interface name values.   This will mark the interface
+        as "used" for allocation purposes.  If the given device/iface does not exist, then None is returned.
 
         Parameters
         ----------
-        device_name : str
-            The name of the device
+        device : str
+            The name of the device, for example "spine1"
 
-        count : int
-            The number of interfaces to reserve
-
-        speed : int (optional)
-            The interface speed to match on
-
-        filters : str (optional)
-            The AQL FILTERS expression used to match.  The FILTER variable
-            name to reference is "interface".  For example, if you have an
-            Interface node with a field called "role", then you could
-            create a filters expression 'interface.role == "server"'
-
-        Other Parameters
-        ----------------
-        The `fields` kwargs allows you to define new fields to set into the interface
-        nodes as they are being allocated.  If you set a key value to None, then
-        it will remove the field if it exists.
+        name : str
+            The interface name, for example "Ethernet1"
 
         Returns
         -------
+        dict
+            The interface node dict
+
         None
-            If the number of interfaces matching the criteria cannot be allocated.
-
-        list[dict]
-            The list of Interface node dict of those matched & updated.
+            If the given device and interface name does not find a match in the pool.
         """
-
-        bind_vars = {
-            'device_name': device_name,
-            'count': count,
-            'update_fields': fields or {}
-        }
-
-        def _use_any():
-            return self._query_allocate_interface_filter_any
-
-        def _use_speed():
-            bind_vars['speed'] = speed
-            return self._query_allocate_interface_filter_speed
-
-        def _use_filters():
-            return self._query_allocate_interface_filter_user_defined.substitute(
-                user_defined_filter=filters)
-
-        def _use_filters_and_speed():
-            return self._query_allocate_interface_filter_user_defined.substitute(
-                user_defined_filter=filters + " and interface.speed == {}".format(speed))
-
-        filter_jump_table = {
-            (False, False): _use_any,
-            (True, False): _use_speed,
-            (False, True): _use_filters,
-            (True, True): _use_filters_and_speed
-        }
-
-        query_filter = filter_jump_table[(speed is not None, filters is not None)]()
-
-        query_expr = (self._query_allocate_interface_fields +
-                      query_filter +
-                      self._query_allocate_interface_return)
-
-        try:
-            return first(self.query(query_expr, bind_vars=bind_vars))
-        except AQLQueryExecuteError:
+        taken = self.pool.take({'device': device, 'name': name})
+        if not taken:
             return None
 
-    _query_mark_unused_all = """
-    FOR interface in Interface
-        FILTER interface.device == @device_name and interface.used == true
-        UPDATE interface WITH {
-            used: false
-        } IN Interface
-        return NEW    
-    """
+        if_node_id = taken['value']
+        return self.col.get(if_node_id)
 
-    def mark_unused_all(self, device_name):
+    def put(self, device, name):
         """
-        Find all interfaces that have used == True and set them to used == False.
+        Mark the interface node associated by the device and interface name as unused.
 
         Parameters
         ----------
-        device_name : str
-            The Device name
+        device : str
+            The device name, for example "spine1"
 
-        Returns
-        -------
-        list[dict]
-            The list of Interface node dict that were marked unused.
+        name : str
+            The interface name, for example "Ethernet1"
+
+        Raises
+        ------
+        ValueError
+            When the device / interface name does not exist in the resource pool.
         """
+        taken = self.pool.take({'device': device, 'name': name})
+        if not taken:
+            raise ValueError('{} {} does not exist in pool'.format(device, name))
 
-        return list(self.query(self._query_mark_unused_all, bind_vars={
-            'device_name': device_name
-        }))
+        self.pool.put(taken, clear_fields=False)

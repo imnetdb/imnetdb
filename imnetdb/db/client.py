@@ -13,18 +13,21 @@
 # limitations under the License.
 
 from collections import defaultdict
-import retrying
-from first import first
-
-from arango import ArangoClient
-from arango.exceptions import ServerConnectionError
 from pkg_resources import iter_entry_points
 
+from first import first
+
+from imnetdb.rpools import RPoolsDB
 
 __all__ = ['IMNetDB']
 
 
-class IMNetDB(object):
+class IMNetDB(RPoolsDB):
+    """
+    About IMNetDB
+    -------------
+    # TODO: write this up.
+    """
 
     def __init__(self, password, user='root',
                  db_name='imnetdb', db_model_name='basic',
@@ -60,40 +63,52 @@ class IMNetDB(object):
             before aborting.
         """
 
-        self._user = user
-        self._password = password
-
-        self._arango = ArangoClient(host=host, port=port)
-        self._sysdb = self._arango.db('_system', username=self._user, password=self._password)
-
-        self.db_name = db_name
         self.db_model_name = db_model_name
         self.db_model = None
-
-        self.db = None
         self.graph = None
-        self.query = None
 
-        @retrying.retry(retry_on_exception=lambda e:  isinstance(e, ServerConnectionError),
-                        stop_max_delay=connect_timeout * 1000)
-        def _await_arangodb_server():
-            self._sysdb.ping()
+        super(IMNetDB, self).__init__(password=password, user=user, db_name=db_name,
+                                      host=host, port=port, connect_timeout=connect_timeout)
 
-        _await_arangodb_server()
-        self.ensure_database()
-        self._bind_entry_points()
-
-    def _bind_entry_points(self):
+    def _init_collection_handlers(self):
         for ep in iter_entry_points('imnetdb_collections'):
             cls = ep.load()
             setattr(self, ep.name, cls(client=self))
 
-    def reset_database(self):
-        self.wipe_database()
-        self.ensure_database()
+    def ensure_database(self):
+        """
+        Ensure that the database exists, ensuring each collection exists as referenced by
+        the database mode, as well as a master graph instance.
 
-    def wipe_database(self):
-        self._sysdb.delete_database(self.db_name, ignore_missing=True)
+        Notes
+        -----
+        Overrides base class, called from :meth:`__init__`.
+        """
+
+        super(IMNetDB, self).ensure_database()
+
+        # using the db_mode_name, lookup the registered database model, and then ensure
+        # the database collections defined by that model exist in the database.
+
+        db_ep = first(iter_entry_points('imnetdb_database_models', self.db_model_name))
+        if not db_ep:
+            raise RuntimeError("Unable to load database model {}".format(self.db_model_name))
+
+        self.db_model = db_ep.load()
+
+        for node_type in self.db_model['nodes']:
+            if not self.db.has_collection(node_type):
+                self.db.create_collection(node_type)
+
+        for _from_node, edge_col, _to_node in self.db_model['edges']:
+            if not self.db.has_collection(edge_col):
+                self.db.create_collection(edge_col, edge=True)
+
+        # finally, ensure that a master graph exists that includes all of the nodes/edge defined
+        # in the model.
+
+        self.ensure_master_graph()
+        self._init_collection_handlers()
 
     def ensure_master_graph(self, graph_name='master'):
 
@@ -112,61 +127,3 @@ class IMNetDB(object):
             self.db.create_graph(graph_name, edge_definitions=edge_definitions)
 
         self.graph = self.db.graph(graph_name)
-
-    def ensure_database(self):
-        db_ep = first(iter_entry_points('imnetdb_database_models', self.db_model_name))
-        if not db_ep:
-            raise RuntimeError("Unable to load database model {}".format(self.db_model_name))
-
-        self.db_model = db_ep.load()
-        if not self._sysdb.has_database(self.db_name):
-            self._sysdb.create_database(self.db_name, users=[
-                dict(username=self._user, password=self._password, active=True)])
-
-        self.db = self._arango.db(self.db_name, username=self._user, password=self._password)
-        self.query = self.db.aql.execute
-
-        for node_type in self.db_model['nodes']:
-            if not self.db.has_collection(node_type):
-                self.db.create_collection(node_type)
-
-        for _from_node, edge_col, _to_node in self.db_model['edges']:
-            if not self.db.has_collection(edge_col):
-                self.db.create_collection(edge_col, edge=True)
-
-        self.ensure_master_graph()
-
-    _query_ensure_edge = """
-    UPSERT { _from: @rel._from, _to: @rel._to }
-    INSERT @rel
-    UPDATE @rel
-    IN @@edge_name
-    RETURN { doc: NEW, old: OLD }
-    """
-
-    def ensure_edge(self, edge, present=True):
-        """
-        Ensure that an edge relationship either exists (present=True) or does not
-        (present=False).
-
-        Parameters
-        ----------
-        edge : tuple
-            (from_node_dict, edge_col_name, to_node_dict)
-
-        present : bool
-            If True ensure the edge exists.
-            If False ensure the edge does not exist.
-        """
-        from_node, edge_col, to_node = edge
-
-        if present is True:
-            self.query(self._query_ensure_edge, bind_vars={
-                'rel': dict(_from=from_node['_id'], _to=to_node['_id']),
-                '@edge_name': edge_col
-            })
-        else:
-            self.db.collection(edge_col).delete_match(filters={
-                '_from': from_node['_id'],
-                '_to': to_node['_id']
-            })

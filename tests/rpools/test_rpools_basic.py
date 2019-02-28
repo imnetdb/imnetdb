@@ -8,8 +8,8 @@ def test_rpools_basic(rpoolsdb):
 
     # add 30 hosts to the pool.
 
-    pool.add(ip_network('9.9.1.0/28').hosts(), rt_name='global')
-    pool.add(ip_network('9.9.1.0/28').hosts(), rt_name='private')
+    pool.add_batch(ip_network('9.9.1.0/28').hosts(), rt_name='global')
+    pool.add_batch(ip_network('9.9.1.0/28').hosts(), rt_name='private')
 
     got1 = pool.take_batch(10, role='spine')
     got2 = pool.take_batch(15, role='leaf')

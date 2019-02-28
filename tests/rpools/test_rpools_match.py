@@ -8,8 +8,8 @@ def test_rpools_batch_match(rpoolsdb):
 
     # add 30 hosts to the pool.
 
-    pool.add(ip_network('9.9.1.0/27').hosts(), rt_name='global')
-    pool.add(ip_network('9.9.1.0/27').hosts(), rt_name='private')
+    pool.add_batch(ip_network('9.9.1.0/27').hosts(), rt_name='global')
+    pool.add_batch(ip_network('9.9.1.0/27').hosts(), rt_name='private')
 
     got_spine = pool.take_batch(10, match={'rt_name': 'private'}, role='spine')
     got_leaf = pool.take_batch(15, match={'rt_name': 'global'}, role='leaf')
@@ -31,10 +31,13 @@ def test_rpools_take_match(rpoolsdb):
     rpoolsdb.reset_database()
     pool = rpoolsdb.resource_pool('loopbacks')
 
-    pool.add(ip_network('9.9.1.0/27').hosts(), rt_name='global')
-    pool.add(ip_network('9.9.1.0/27').hosts(), rt_name='private')
+    pool.add_batch(ip_network('9.9.1.0/27').hosts(), rt_name='global')
+    pool.add_batch(ip_network('9.9.1.0/27').hosts(), rt_name='private')
 
-    # "take-1" ... save these for comparison for taking again
+    # "take-1" ... we are going to take by a given name, matching criteria on
+    # the routing table name, and then set the role into the taken pool item.
+
+    # save these for comparison for taking again
 
     t1_s_e0 = pool.take({'s:if_name': 'eth0'}, match={'rt_name': 'global'}, role='spine')
     t1_s_e1 = pool.take({'s:if_name': 'eth1'}, match={'rt_name': 'global'}, role='spine')
@@ -66,7 +69,4 @@ def test_rpools_take_match(rpoolsdb):
 
     assert t1_l_e0 == t2_l_e0
     assert t1_l_e1 == t2_l_e1
-
-
-
 
