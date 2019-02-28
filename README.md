@@ -118,7 +118,11 @@ client = IMNetDB(password='admin123', db_name='myappdb')
 At this point you can then start using the client to manage the database.
 For examples, you can review the files in the **tests** directory.
 
-Here is a basic example to create a devices with interfaces:
+Here is a basic example to create a devices with interfaces.  For this example you will also need to 
+
+```bash
+$ pip install bracket_expansion
+```
 
 ````python
 from bracket_expansion import bracket_expansion
