@@ -102,6 +102,15 @@ class InterfaceNodes(TupleKeyCollection):
         if_node_id = taken['value']
         return self.col.get(if_node_id)
 
+    def pool_take(self, key, match=None, **fields):
+        taken = self.pool.take(key, match, **fields)
+
+        if not taken:
+            return None
+
+        if_node_id = taken['value']
+        return self.col.get(if_node_id)
+
     def put(self, device, name):
         """
         Mark the interface node associated by the device and interface name as unused.

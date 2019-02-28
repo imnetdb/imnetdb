@@ -69,34 +69,6 @@ class ResourcePool(object):
             'user_defined_fields': user_defined_fields
         })
 
-    # _query_take_key = Template("""
-    # LET find_key = MERGE(@user_key, {used: true})
-    #
-    # LET found = FIRST(
-    #     FOR item IN @@col_name
-    #         FILTER MATCHES(item, find_key)
-    #         LIMIT 1
-    #         RETURN item
-    # )
-    #
-    # LET runQuery = found != null ? [] : [1]
-    #
-    # LET alternative = FIRST(FOR dummy IN runQuery
-    #     FOR item IN @@col_name
-    #         FILTER item.used == false and MATCHES(item, @user_key)
-    #         ${user_defined_filter}
-    #         LIMIT 1
-    #         UPDATE item WITH MERGE(
-    #             {used: true},
-    #             @user_key,
-    #             @user_defined_fields)
-    #         INTO @@col_name
-    #         RETURN NEW
-    # )
-    #
-    # RETURN found ? {doc: found, exists: true} : {doc: alternative, new: true}
-    # """)
-
     _query_take_key = Template("""
     LET found = FIRST(
         FOR item IN @@col_name
@@ -130,8 +102,9 @@ class ResourcePool(object):
 
         Parameters
         ----------
-        key : dict
-            The fields that make a unique identity within the pool.
+        key : str|dict
+            The fields that make a unique identity within the pool. If caller provides a string, then
+            a new field called "key" will be defined in the pool item node.
 
         match : dict (optional)
             A set of fields that must be matched for selection of unused items
@@ -148,6 +121,9 @@ class ResourcePool(object):
 
         # TODO: may need to add control for allowing the call to determine the used state, rather
         # TODO: than hardcoding the query to check for true in the find_key.
+
+        if isinstance(key, str):
+            key = dict(key=key)
 
         bind_vars = {
             '@col_name': self.col.name,
