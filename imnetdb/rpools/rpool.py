@@ -104,7 +104,7 @@ class ResourcePool(object):
         ----------
         key : str|dict
             The fields that make a unique identity within the pool. If caller provides a string, then
-            a new field called "key" will be defined in the pool item node.
+            a new field called "key_" will be defined in the pool item node.
 
         match : dict (optional)
             A set of fields that must be matched for selection of unused items
@@ -123,7 +123,7 @@ class ResourcePool(object):
         # TODO: than hardcoding the query to check for true in the find_key.
 
         if isinstance(key, str):
-            key = dict(key=key)
+            key = dict(key_=key)
 
         bind_vars = {
             '@col_name': self.col.name,

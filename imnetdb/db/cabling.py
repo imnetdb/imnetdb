@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from string import Template
 from first import first
 from imnetdb.db.collection import CommonCollection
 
@@ -129,3 +130,57 @@ class CableNodes(CommonCollection):
         return dict(cable_node=found_cable,
                     interface_nodes=[if_col.get(edge['_from'])
                                      for edge in found_edges])
+
+    _query_get_cabling = Template("""
+    FOR cable in Cable
+        ${user_defined_filter}
+        RETURN {
+            'cable': cable,
+            'interfaces': (
+                 for if_node in inbound cable cabled
+                    RETURN if_node
+            )                         
+        } 
+    """)
+
+    def get_cabling(self, match=None, filterexpr=None):
+        """
+        Return a list of cabling information, where each list item is a dictionary with keys:
+            - cable: the cable node dict
+            - interfaces: a list of interface node dics
+
+        Parameters
+        ----------
+        match : dict (optional)
+            If provided, this dictionary is used to match fields on cable node dict items.  For example,
+            if you have added a field called "role" to the cable node, you can use match={'role': <value>}
+            to only return cable items that have a role matching <value>.
+
+        filterexpr : str (optional)
+            This is an AQL FILTER expression, excluding the FILTER statement.  For example, if
+            the cable node has a field called 'role' and you want to get cabling for either role is leaf-spine
+            or role is leaf-server, then the filterexpr parameter would be:
+
+                filterexpr='cable.role == "leaf-spine" or cable.role == "leaf-server"'
+
+        Notes
+        -----
+        You cannot mix the use of `match` and `filterexpr`.  You can use one or the other.
+
+        Returns
+        -------
+        list[dict]
+            see above.
+        """
+        bind_vars = {}
+        udf = ''
+
+        if match:
+            udf = 'FILTER MATCHES(cable, @user_match)'
+            bind_vars['user_match'] = match
+
+        elif filterexpr:
+            udf = f'FILTER {filterexpr}'
+
+        query = self._query_get_cabling.substitute(user_defined_filter=udf)
+        return list(self.query(query, bind_vars=bind_vars))

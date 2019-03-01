@@ -21,7 +21,10 @@ class RoutingTableNodes(NameKeyCollection, CommonNodeGroup):
     COLLECTION_NAME = 'RoutingTable'
     EDGE_NAME = 'ip_member'
 
-    _query_members_type = """
+    # TODO: not preently using the following AQL, but leaving here for now since there may
+    # TODO: be a use-case for retrieving just the values without the assigned nodes.
+
+    _query_members = """
     LET rt = DOCUMENT('RoutingTable', @rt_name)
     
     for entry in inbound rt ip_member
@@ -29,20 +32,33 @@ class RoutingTableNodes(NameKeyCollection, CommonNodeGroup):
         return entry    
     """
 
+    _query_members_assigned = """
+    LET rt = DOCUMENT('RoutingTable', @rt_name)
+    
+    for ip in inbound rt ip_member
+        FILTER IS_SAME_COLLECTION(@col_name, ip)
+        LET assigned = FIRST(for $assigned in outbound ip ip_assigned return $assigned)
+        return {
+            ip: ip, 
+            assigned: assigned,
+            collection: PARSE_IDENTIFIER(assigned)['collection']
+        }
+    """
+
     def get_host_members(self, rt_node):
-        return list(self.query(self._query_members_type, bind_vars={
+        return list(self.query(self._query_members_assigned, bind_vars={
             'rt_name': rt_node['name'],
             'col_name': 'IPAddress'
         }))
 
     def get_interface_members(self, rt_node):
-        return list(self.query(self._query_members_type, bind_vars={
+        return list(self.query(self._query_members_assigned, bind_vars={
             'rt_name': rt_node['name'],
             'col_name': 'IPInterface'
         }))
 
     def get_network_members(self, rt_node):
-        return list(self.query(self._query_members_type, bind_vars={
+        return list(self.query(self._query_members_assigned, bind_vars={
             'rt_name': rt_node['name'],
             'col_name': 'IPNetwork'
         }))

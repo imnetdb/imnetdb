@@ -27,10 +27,11 @@ def test_basci_routing_table(imnetdb):
     # what we added.
 
     members = db_rt.get_host_members(rt_global)
-    assert [h['name'] for h in members] == [h['name'] for h in host_ip_nodes]
+    assert [h['ip']['name'] for h in members] == [h['name'] for h in host_ip_nodes]
 
     # now get the IPNetwork members in the global rt and ensure a match with
     # what we added.
 
     members = db_rt.get_network_members(rt_global)
-    assert [n['name'] for n in members] == [str(this_net)]
+    assert [n['ip']['name'] for n in members] == [str(this_net)]
+
