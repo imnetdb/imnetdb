@@ -42,11 +42,17 @@ database_model = dict(
         ('IPInterface',     'ip_member',            'RoutingTable'),
         ('IPNetwork',       'ip_member',            'RoutingTable'),
 
-        # an IP interface can be assigned to any of the following node:
+        # IP interface can be assigned to any of the following nodes:
 
         ('IPInterface',     'ip_assigned',          'Interface'),
         ('IPInterface',     'ip_assigned',          'LAG'),
         ('IPInterface',     'ip_assigned',          'VLAN'),
 
+        # VLAN, VLANGroup can be assigned to any of the following nodes:
+
+        ('VLAN',            'vlan_assigned',        'Interface'),
+        ('VLANGroup',       'vlan_assigned',        'Interface'),
+        ('VLAN',            'vlan_assigned',        'LAG'),
+        ('VLANGroup',       'vlan_assigned',        'LAG'),
     ]
 )

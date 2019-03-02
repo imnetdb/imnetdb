@@ -14,10 +14,12 @@
 
 from setuptools import setup, find_packages
 
-package_version = '0.0.2'
+package_version = '0.1.0'
 package_name = 'imnetdb-db'
 packages = find_packages()
-package_dir = packages[-1]
+
+plugin_collections_package = 'imnetdb.db'
+
 
 imnetdb_collection_entry_points = [
     ('cabling',         'cabling',      'CableNodes'),
@@ -43,9 +45,10 @@ with open("README.md", "r") as fh:
 
 
 def create_entry_points():
-    return ["{handler} = {pkgdir}.{module}:{class_name}".format(handler=handler, pkgdir=package_dir,
-                                                                module=module, class_name=class_name)
-            for handler, module, class_name in imnetdb_collection_entry_points]
+    return ["{handler} = {package}.{module}:{class_name}".format(
+        handler=handler, package=plugin_collections_package,
+        module=module, class_name=class_name)
+        for handler, module, class_name in imnetdb_collection_entry_points]
 
 
 setup(
@@ -60,7 +63,7 @@ setup(
     entry_points={
         'imnetdb_collections': create_entry_points(),
         'imnetdb_database_models': [
-            'basic = {}.basic_db_model:database_model'.format(package_dir)
+            'basic = {}.basic_db_model:database_model'.format(plugin_collections_package)
         ]
     }
 )
