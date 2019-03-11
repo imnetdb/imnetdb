@@ -81,7 +81,7 @@ LET $ipifs_assigned_items = MERGE(
 LET $ipifs_assigned_id_list = ATTRIBUTES($ipifs_assigned_items)
 LET $ipifs_addrs_list = VALUES($ipifs_assigned_items)
 
-LET $if_used_items = MERGE(FOR pool_node in RPOOL_Interface
+LET $if_used_items = MERGE(FOR pool_node in InterfaceRP
         FILTER pool_node.device == @device_name
         RETURN {[pool_node.name]: pool_node.used}
 )
