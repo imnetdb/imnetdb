@@ -1,3 +1,4 @@
 first
 retrying
 python-arango
+bracket_expansion
