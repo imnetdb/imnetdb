@@ -14,8 +14,8 @@
 
 from setuptools import setup, find_packages
 
-package_version = '0.1.0'
-package_name = 'imnetdb-db'
+package_version = '0.2.0'
+package_name = 'imnetdb'
 packages = find_packages()
 
 plugin_collections_package = 'imnetdb.db'

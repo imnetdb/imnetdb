@@ -21,7 +21,7 @@ class InterfaceNodes(TupleKeyCollection):
 
     def __init__(self, client):
         super(InterfaceNodes, self).__init__(client=client)
-        self.pool = client.resource_pool('RPOOL_%s' % self.COLLECTION_NAME)
+        self.pool = client.resource_pool('%sRP' % self.COLLECTION_NAME)
 
     def _key(self, key_tuple):
         return {

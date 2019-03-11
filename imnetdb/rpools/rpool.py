@@ -21,14 +21,38 @@ class ResourcePool(object):
 
     _query_add_new_items = """
     FOR value IN @values
-        INSERT 
-            MERGE({value: value}, @user_defined_fields)
+        UPSERT MERGE(
+            {value: value},
+            @user_defined_fields
+        )
+        INSERT MERGE(
+            {used: @used, value: value}, 
+            @user_defined_fields
+        )
+        UPDATE {}
         INTO @@col_name
+        RETURN [NEW, OLD]    
+    """
+
+    _query_add_item_idempotent = """
+    UPSERT @user_values
+    INSERT MERGE({used: @used}, @user_values)
+    UPDATE {}
+    INTO @@col_name
+    RETURN [NEW, OLD]    
     """
 
     def add(self, value, used=False, **fields):
         """
-        Add a single item to the pool.
+        Add a single item to the pool.  This add is performed in an idempotent
+        manner.  If the item that matches the `value` already exists in the pool,
+        then no action will be taken.  Otherwise the new item will be added.
+
+        Notes
+        -----
+        Even if the item exists and it has been *used*, this add function will not
+        make any changes.  The "does it exist" criteria used both the `value`
+        and the dict of `fields`.
 
         Parameters
         ----------
@@ -42,7 +66,14 @@ class ResourcePool(object):
         ----------------
         fields are user-defined fields to be stored into the item
         """
-        self.col.insert(dict(value=value, used=used, **fields))
+        new_doc, old_doc = first(self.query(
+            self._query_add_item_idempotent, bind_vars={
+                '@col_name': self.col.name,
+                'used': used,
+                'user_values': dict(value=value, **fields)
+            }))
+
+        return new_doc, old_doc
 
     def add_batch(self, values, used=False, **fields):
         """
@@ -61,13 +92,16 @@ class ResourcePool(object):
         """
 
         actual_items = [self.value_type(item) for item in values]
-        user_defined_fields = dict(fields, used=used)
+        batch_db = self.db.begin_batch_execution(return_result=False)
 
-        self.query(self._query_add_new_items, bind_vars={
-            '@col_name': self.col.name,
-            'values': actual_items,
-            'user_defined_fields': user_defined_fields
-        })
+        for value in actual_items:
+            batch_db.aql.execute(self._query_add_item_idempotent, bind_vars={
+                '@col_name': self.col.name,
+                'used': used,
+                'user_values': dict(value=value, **fields)
+            })
+
+        batch_db.commit()
 
     _query_take_key = Template("""
     LET found = FIRST(
