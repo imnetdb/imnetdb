@@ -77,6 +77,9 @@ class CommonIPNode(TupleKeyCollection):
         self.client.routing_tables.add_member(rt_node, ip_node)
         return ip_node
 
+    def assign(self, ip_node, other_node):
+        self.client.ensure_edge((ip_node, 'ip_assigned', other_node))
+
 
 class IPAddressNodes(CommonIPNode):
     """

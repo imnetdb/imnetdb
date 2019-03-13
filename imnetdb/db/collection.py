@@ -29,6 +29,9 @@ class CommonCollection(object):
     def __iter__(self):
         return self.col.all()
 
+    def __contains__(self, item):
+        return self.col.has({'_key': item})
+
     def remove(self, node):
         vert_col = self.client.graph.vertex_collection(self.COLLECTION_NAME)
         vert_col.delete(node)
