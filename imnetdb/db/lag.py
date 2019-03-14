@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 from first import first
 
 from imnetdb.db.collection import TupleKeyCollection, CommonNodeGroup
@@ -141,3 +142,58 @@ class LAGNodes(TupleKeyCollection, CommonNodeGroup):
                         value: Interface node dict
         """
         return first(self.query(self._query_lag_catalog))
+
+    _query_cabled_lags = """
+    FOR lag_node IN LAG
+        FOR if_node IN INBOUND lag_node lag_member
+            FOR cable_node IN OUTBOUND if_node cabled
+                RETURN {
+                    cable_id: cable_node._id,
+                    lag_id: lag_node._id,
+                    device: if_node.device,
+                    if_name: if_node.name
+                }    
+    """
+
+    def get_cabling(self, return_list=False):
+        """
+        This function queries the database for all LAGs that have a cabled peering relationship.  That is
+        to say - find all the cabled interfaces, and find the LAGs that share cables.  Return a
+        dictionary with:
+            key = tuple of the LAG peers ((dev1, lag1), (dev2, lag2))
+            value = list of cable-IDs
+
+        If the caller would prefer to have the raw list of data so that they can orient the information
+        in a different way, then set `return_list` to True
+
+        Returns
+        -------
+        dict[tuple] - when return_list is False (default)
+            As described
+
+        list[dict] - when return_list is True
+            Each dict entry will have the following:
+                cable_id = Cable ID
+                lag_id = LAG ID
+                device = device name
+                if_name = interface name on device
+        """
+
+        # if the caller simply wants the raw list of data, return that now
+
+        cabled_lags = list(self.query(self._query_cabled_lags))
+        if return_list is True:
+            return cabled_lags
+
+        # otherwise, organize the data as a dictionary with keys = LAG peers (tuple) and the
+        # values are the list of cables between the LAG peers.
+
+        by_cable_id = defaultdict(set)
+        for item in cabled_lags:
+            by_cable_id[item['cable_id']].add((item['device'], item['lag_id']))
+
+        by_lag_peers = defaultdict(list)
+        for cable_id, lag_peers in by_cable_id.items():
+            by_lag_peers[tuple(lag_peers)].append(cable_id)
+
+        return dict(by_lag_peers)

@@ -42,6 +42,7 @@ defines a set of relationship types.  For details refer to the file [basic_db_mo
    * **Interface** - represents a device interface
    * **Cable** - represents the connection between two device interfaces
    * **LAG** - represents Link Aggregation Groups
+   * **LACP** - represents the LACP connection between LAGs
 
 *Virtual Networking*
    

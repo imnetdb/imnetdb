@@ -21,7 +21,7 @@ database_model = dict(
         'Device', 'DeviceGroup',
         'Interface',
         'IPAddress', 'IPNetwork', 'IPInterface',
-        'LAG',
+        'LAG', 'LACP',
         'RoutingTable',
         'VLAN', 'VLANGroup'
     ],
@@ -35,6 +35,7 @@ database_model = dict(
         ('Interface',       'lag_member',           'LAG'),
         ('Interface',       'cabled',               'Cable'),
         ('VLAN',            "vlan_member",          'VLANGroup'),
+        ('LAG',             "lacp_member",          "LACP"),
 
         # IP address node types, must be bound to a routing table for address management
 

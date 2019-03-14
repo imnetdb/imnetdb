@@ -30,6 +30,7 @@ imnetdb_collection_entry_points = [
     ('ip_net_addrs',    'ipaddrs',      'IPNetworkNodes'),
     ('ip_if_addrs',     'ipaddrs',      'IPInterfaceNodes'),
     ('lags',            'lag',          'LAGNodes'),
+    ('lacp',            'lacp',         'LACPNodes'),
     ('routing_tables',  'ipaddrs',      'RoutingTableNodes'),
     ('vlans',           'vlan',         'VlanNodes'),
     ('vlan_groups',     'vlan',         'VlanGroupNodes'),
