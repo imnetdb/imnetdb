@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from ipaddress import ip_address, ip_interface, ip_network
+from first import first
 from imnetdb.db.collection import NameKeyCollection, TupleKeyCollection, CommonNodeGroup
 
 
@@ -106,3 +107,40 @@ class IPNetworkNodes(CommonIPNode):
 
     COLLECTION_NAME = 'IPNetwork'
     IP_FUNC = staticmethod(ip_network)
+
+
+_query_all_assignments = """
+LET $ipif_assignments = (FOR ipif_node in IPInterface
+    LET $assigned = FIRST(FOR asgn_node IN OUTBOUND ipif_node ip_assigned RETURN asgn_node)
+    return {
+        ip: ipif_node,
+        assigned: $assigned
+    }
+)
+
+LET $ipaddr_assignments = (FOR ipif_node in IPAddress
+    LET $assigned = FIRST(FOR asgn_node IN OUTBOUND ipif_node ip_assigned RETURN asgn_node)
+    return {
+        ip: ipif_node,
+        assigned: $assigned
+    }
+)
+
+LET $ipnet_assignments = (FOR ipif_node in IPNetwork
+    LET $assigned = FIRST(FOR asgn_node IN OUTBOUND ipif_node ip_assigned RETURN asgn_node)
+    return {
+        ip: ipif_node,
+        assigned: $assigned
+    }
+)
+
+RETURN {
+    'address': $ipaddr_assignments,
+    'interface': $ipif_assignments,
+    'network': $ipnet_assignments
+}
+"""
+
+
+def query_all_assignments(db):
+    return first(db.query(_query_all_assignments))
