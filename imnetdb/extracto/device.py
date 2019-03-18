@@ -106,19 +106,19 @@ LET $vlan_name_list = UNIQUE(VALUES($vlans_assigned_items)[**])
 LET $vlans = MERGE(FOR vlan_name in $vlan_name_list
     LET vlan_node = DOCUMENT("VLAN", vlan_name)
     
-    // if IPs are assigned to the VLAN, then create an 'ipaddrs' key
-    LET ipaddrs = FIRST(
+    // if IPs are assigned to the VLAN, then create an 'ip_addrs' key
+    LET ip_addrs = FIRST(
         LET ip_nodes = (
             FOR ip_node IN INBOUND vlan_node ip_assigned 
             RETURN KEEP(ip_node, ATTRIBUTES(ip_node, true))
         )
-        RETURN LENGTH(ip_nodes) ? {ipaddrs: ip_nodes} : {}
+        RETURN LENGTH(ip_nodes) ? {ip_addrs: ip_nodes} : {}
     )        
 
     RETURN {
         [vlan_name]: MERGE(
             KEEP(vlan_node, MINUS(ATTRIBUTES(vlan_node, true), ["name"])),
-            ipaddrs)
+            ip_addrs)
     }
         
 )
@@ -131,9 +131,9 @@ LET $interfaces = MERGE(FOR if_node in $if_node_list
         : {}
     )
     
-    // if ip_ifs are assigned to the IF, then create an 'ipaddrs' key
-    LET ipaddrs = FIRST(RETURN if_node._id in $ipifs_assigned_id_list
-        ? {ipaddrs: $ipifs_assigned_items[if_node._id]}
+    // if ip_ifs are assigned to the IF, then create an 'ip_addrs' key
+    LET ip_addrs = FIRST(RETURN if_node._id in $ipifs_assigned_id_list
+        ? {ip_addrs: $ipifs_assigned_items[if_node._id]}
         : {}
     )        
 
@@ -144,7 +144,7 @@ LET $interfaces = MERGE(FOR if_node in $if_node_list
         UNSET(if_node, ['_id', '_rev', '_key', 'name', 'device']), 
         unused,
         vlans, 
-        ipaddrs)
+        ip_addrs)
     }
 )
 
@@ -159,9 +159,9 @@ LET $lags = MERGE(FOR lag_node in $lag_node_list
         : {}
     )
     
-    // if ip_ifs are assigned to the IF, then create an 'ipaddrs' key
-    LET ipaddrs = FIRST(RETURN lag_node._id in $ipifs_assigned_id_list
-        ? {ipaddrs: $ipifs_assigned_items[lag_node._id]}
+    // if ip_ifs are assigned to the IF, then create an 'ip_addrs' key
+    LET ip_addrs = FIRST(RETURN lag_node._id in $ipifs_assigned_id_list
+        ? {ip_addrs: $ipifs_assigned_items[lag_node._id]}
         : {}
     )        
 
@@ -169,7 +169,7 @@ LET $lags = MERGE(FOR lag_node in $lag_node_list
         UNSET(lag_node, ['_id', '_rev', '_key', 'name', 'device']), 
         interfaces,
         vlans, 
-        ipaddrs)
+        ip_addrs)
     }
 )
 
@@ -182,6 +182,7 @@ RETURN {
     vlans: $vlans
 }
 """
+
 
 def extracto_device(db, device_name):
     """
@@ -201,8 +202,17 @@ def extracto_device(db, device_name):
         Complex dictionary of data.  Structure To Be Documented
     """
 
-    res = first(db.query(_query_device_extracto, bind_vars={
-        'device_name': device_name
-    }))
+    # first step is to get the device information from the database directly
+    # using a sophisticated query.
 
-    return res
+    device_dataset = first(db.query(_query_device_extracto, bind_vars={'device_name': device_name}))
+
+    # next, using the information in the 'lags' section, go back into the
+    # interfaces section to indicate which interfaces are used by which lags.
+    # This is easier to do in code here than AQL.
+
+    for lag_name, lag_info in device_dataset['lags'].items():
+        for if_name in lag_info['interfaces']:
+            device_dataset['interfaces'][if_name]['lag'] = lag_name
+
+    return device_dataset
