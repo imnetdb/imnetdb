@@ -14,6 +14,7 @@
 
 from copy import deepcopy
 from bracket_expansion import expand
+from collections import defaultdict
 
 
 class Stencils(object):
@@ -22,15 +23,18 @@ class Stencils(object):
     def __init__(self):
         self.registry = dict()
 
-    def _make_stencil_dict(self, stencil_name, stencil_data):
-        stencil_dict = deepcopy(stencil_data)
+    def _make_stencil(self, stencil_name, stencil_def):
+        if stencil_name in self.registry:
+            return
+
+        stencil_dict = deepcopy(stencil_def)
 
         stencil_dict['name'] = stencil_name
         interfaces = stencil_dict.pop('interfaces', None)
         if not interfaces:
             raise ValueError(f"{stencil_name} missing required 'interfaces'")
 
-        stencil_dict['interfaces'] = dict()
+        stencil_dict['interfaces'] = defaultdict(dict)
 
         # we are going to expand the list of interface and 'deepcopy' the if_data
         # dict so that we can then later (potentially) update the interface
@@ -43,32 +47,60 @@ class Stencils(object):
             for if_name in if_name_list:
                 stencil_dict['interfaces'][if_name] = deepcopy(if_data)
 
-        return stencil_dict
-
-    def _make_extended_stencil_dict(self, stencil_name, stencil_data):
-        # if here, then using a previously defined stencil as a base
-        # stencil and then "extending" it to this new one.
-
-        base_name = stencil_data.pop('base')
-        stencil_dict = deepcopy(self[base_name])
-        ext_dict = self._make_stencil_dict(stencil_name, stencil_data)
-        ext_interfaces = ext_dict.pop('interfaces')
-        stencil_dict.update(ext_dict)
-
-        for if_name, if_data in ext_interfaces.items():
-            stencil_dict['interfaces'][if_name].update(if_data)
-
-        return stencil_dict
-
-    def define_stencil(self, stencil_name, stencil_data):
-        _maker = self._make_stencil_dict if 'base' not in stencil_data else self._make_extended_stencil_dict
-        stencil_dict = _maker(stencil_name, stencil_data)
         self.registry[stencil_name] = stencil_dict
-        return stencil_dict
 
-    def load(self, stencils):
-        for stencil_name, stencil_data in stencils.items():
-            self.define_stencil(stencil_name, stencil_data)
+    def _make_extended_stencil(self, all_stencil_defs, stencil_name, stencil_def):
+
+        if stencil_name in self.registry:
+            return self.registry[stencil_name]
+
+        # if the 'base' stencil is not yet defined, then we are going to recursively invoke
+        # the 'define_stencil' method.  The recursion technique allows the user to define
+        # stencils that have multiple-linear base definitions.
+
+        base_name = stencil_def['base']
+        if base_name not in self.registry:
+            base_def = all_stencil_defs[base_name]
+            self.define_stencil(all_stencil_defs=all_stencil_defs,
+                                stencil_name=base_name, stencil_def=base_def)
+
+        # create a copy of the base stencil dictionary.  we'll use this to "merge in" the
+        # new stencil definition.
+
+        copyof_base_dict = deepcopy(self[base_name])
+        stencil_def.pop('base')
+        self._make_stencil(stencil_name, stencil_def)
+        new_stencil_dict = self.registry.pop(stencil_name)
+
+        # remove the interfaces information from the new stencil since (1) we
+        # are going to merge the new stencil dict into our base copy and (2) we
+        # are going to merge the specific interfaces information with the base
+        # stencil interfaces.
+
+        new_interfaces = new_stencil_dict.pop('interfaces')
+
+        # merge in the new stencil definition, then merge each interface
+
+        copyof_base_dict.update(new_stencil_dict)
+        for if_name, if_data in new_interfaces.items():
+            copyof_base_dict['interfaces'][if_name].update(if_data)
+
+        self.registry[stencil_name] = copyof_base_dict
+
+    def define_stencil(self, all_stencil_defs, stencil_name, stencil_def):
+        if 'base' in stencil_def:
+            self._make_extended_stencil(all_stencil_defs=all_stencil_defs,
+                                        stencil_name=stencil_name,
+                                        stencil_def=stencil_def)
+            return
+
+        self._make_stencil(stencil_name=stencil_name, stencil_def=stencil_def)
+
+    def load(self, stencils_defs):
+        for stencil_name, stencil_def in stencils_defs.items():
+            self.define_stencil(all_stencil_defs=stencils_defs,
+                                stencil_name=stencil_name,
+                                stencil_def=stencil_def)
 
     def ensure_device(self, db, stencil_def, device_name, **device_fields):
         nodes = dict(interfaces=dict())
