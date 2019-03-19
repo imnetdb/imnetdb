@@ -49,6 +49,12 @@ database_model = dict(
         ('IPInterface',     'ip_assigned',          'LAG'),
         ('IPInterface',     'ip_assigned',          'VLAN'),
 
+        # IP memberships within types
+
+        ('IPAddress',       'ip_member',            'IPInterface'),
+        ('IPAddress',       'ip_member',            'IPNetwork'),
+        ('IPInterface',     'ip_member',            'IPNetwork'),
+
         # VLAN, VLANGroup can be assigned to any of the following nodes:
 
         ('VLAN',            'vlan_assigned',        'Interface'),
