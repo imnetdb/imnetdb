@@ -74,7 +74,7 @@ class InterfaceNodes(TupleKeyCollection):
 
         return if_node
 
-    def take(self, device, name):
+    def take(self, device, name, **fields):
         """
         Take the interface node given the device name and interface name values.   This will mark the interface
         as "used" for allocation purposes.  If the given device/iface does not exist, then None is returned.
@@ -100,7 +100,13 @@ class InterfaceNodes(TupleKeyCollection):
             return None
 
         if_node_id = taken['value']
-        return self.col.get(if_node_id)
+        if_node = self.col.get(if_node_id)
+
+        if fields:
+            if_node.update(fields)
+            if_node = self.col.update(if_node, return_new=True)['new']
+
+        return if_node
 
     def pool_take(self, key, match=None, **fields):
         taken = self.pool.take(key, match, **fields)
