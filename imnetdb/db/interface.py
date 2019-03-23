@@ -70,7 +70,7 @@ class InterfaceNodes(TupleKeyCollection):
 
         self.pool.add(value=if_node['_id'],
                       device=device_node['name'], name=if_node['name'],
-                      **fields)
+                      used=used, **fields)
 
         return if_node
 
