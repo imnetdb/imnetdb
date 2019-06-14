@@ -150,6 +150,7 @@ class LAGNodes(TupleKeyCollection, CommonNodeGroup):
                 RETURN {
                     cable_id: cable_node._id,
                     lag_id: lag_node._id,
+                    lag_role: lag_node.role,
                     device: if_node.device,
                     if_name: if_node.name
                 }    
@@ -175,6 +176,7 @@ class LAGNodes(TupleKeyCollection, CommonNodeGroup):
             Each dict entry will have the following:
                 cable_id = Cable ID
                 lag_id = LAG ID
+                lag_role = LAG role
                 device = device name
                 if_name = interface name on device
         """

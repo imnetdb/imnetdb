@@ -14,7 +14,13 @@
 
 from copy import deepcopy
 from bracket_expansion import expand
-from collections import defaultdict
+from collections import OrderedDict
+
+
+class InterfacesDict(OrderedDict):
+    def __missing__(self, key):
+        self[key] = dict()
+        return self[key]
 
 
 class Stencils(object):
@@ -34,7 +40,7 @@ class Stencils(object):
         if not interfaces:
             raise ValueError(f"{stencil_name} missing required 'interfaces'")
 
-        stencil_dict['interfaces'] = defaultdict(dict)
+        stencil_dict['interfaces'] = InterfacesDict()
 
         # we are going to expand the list of interface and 'deepcopy' the if_data
         # dict so that we can then later (potentially) update the interface

@@ -131,6 +131,10 @@ class CableNodes(CommonCollection):
                     interface_nodes=[if_col.get(edge['_from'])
                                      for edge in found_edges])
 
+    # -------------------------------------------------------------------------
+    # get_cabling
+    # -------------------------------------------------------------------------
+
     _query_get_cabling = Template("""
     FOR cable in Cable
         ${user_defined_filter}
@@ -184,3 +188,24 @@ class CableNodes(CommonCollection):
 
         query = self._query_get_cabling.substitute(user_defined_filter=udf)
         return list(self.query(query, bind_vars=bind_vars))
+
+    # -------------------------------------------------------------------------
+    # trace()
+    # -------------------------------------------------------------------------
+
+    _query_trace_cable = """
+    LET cable = DOCUMENT("Cable", @cable_id)
+    
+    LET unknown_if_node = (FOR $if_node IN INBOUND cable cabled
+        FILTER $if_node.device != @known_device
+        RETURN $if_node
+    )
+    
+    RETURN unknown_if_node
+    """
+
+    def trace(self, cable_id, known_device=None):
+        return first(self.query(self._query_trace_cable, bind_vars={
+            'cable_id': cable_id,
+            'known_device': known_device
+        }))
