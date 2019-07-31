@@ -111,11 +111,11 @@ class IPNetworkNodes(CommonIPNode):
 
 _query_all_assignments = """
 LET $ipif_assignments = (FOR ipif_node in IPInterface
-    LET $assigned = FIRST(FOR asgn_node IN OUTBOUND ipif_node ip_assigned RETURN asgn_node)
-    return {
-        ip: ipif_node,
-        assigned: $assigned
-    }
+    FOR asgn_node IN OUTBOUND ipif_node ip_assigned
+        return {
+            ip: ipif_node,
+            assigned: asgn_node
+        }
 )
 
 LET $ipaddr_assignments = (FOR ipif_node in IPAddress
