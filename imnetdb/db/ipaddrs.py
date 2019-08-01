@@ -72,9 +72,55 @@ class CommonIPNode(TupleKeyCollection):
         return dict(rt=key_tuple[0]['name'], name=key_tuple[1])
 
     def ensure(self, key_tuple, **fields):
-        rt_node, name = key_tuple
+        """
+        Ensure the node exists in the database collection using the key_tuple
+        value to determine a unique item.  The tuple can contain an optional
+        third item (dict) for user-defined key-values beyond the required
+        rt-node, ip-string.
+
+        Parameters
+        ----------
+        key_tuple: tuple
+            [0]: dict - routing-table node
+            [1]: str - IP string value
+            [2]: (optional) dict - any additional items user wants as part of key
+
+        Other Parameters
+        ----------------
+        The `fields` are additional key-values that will be added to the node
+        when it is created or updated (ensured).
+
+        Examples
+        --------
+        Standard use-case where key_tuple is only the rt-node and the IP address:
+
+            ret_node = mycol.ensure((rt_node, "10.1.1.0/30"))
+
+        The second use-case is for creating "private" or "shared" items; for
+        example when the same IP address is used by multiple devices. This
+        use-case key_tuple has an additional field to ensure unqiueness beyond
+        the (RT, IP) value.  In this example use/store a field called "group"
+        as part of the unique key:
+
+            ret_node = mycol.ensure((rt_node, "10.1.1.0/30", dict(group="foobaz"))
+
+        The same call could be made with a different group, but using the same IP string
+        value, for example:
+
+            another_node = mycol.ensure((rt_node, "10.1.1.0/30", dict(group="gizmo"))
+
+        The DB collection will now contain two nodes both with the same (RT, IP) value
+        but with different group values.
+
+        Returns
+        -------
+        dict
+            The collection node that was created/updated.
+        """
+        rt_node, name, *other_key_fields = key_tuple
+        other_key_fields = first(other_key_fields) or {}
         ip_addr = self.IP_FUNC(name)
-        ip_node = super().ensure(key_tuple, version=ip_addr.version, **fields)
+        ip_node = super().ensure(key_tuple, version=ip_addr.version, **fields, **other_key_fields)
         self.client.routing_tables.add_member(rt_node, ip_node)
         return ip_node
 
