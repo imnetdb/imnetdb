@@ -150,7 +150,11 @@ LET $interfaces = MERGE(FOR if_node in $if_node_list
 
 LET $lags = MERGE(FOR lag_node in $lag_node_list
     LET interfaces = {
-        interfaces: (FOR if_node IN INBOUND lag_node lag_member RETURN if_node.name)
+        interfaces: (
+            FOR if_node IN INBOUND lag_node lag_member 
+            SORT if_node.name
+            RETURN if_node.name
+        )
     }        
     
     // if vlans are assigned to the IF, then create a 'vlans' key
